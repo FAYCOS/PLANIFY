@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planify UI - Top Nav</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #F7F8FC;
+      --bg-2: #EEF2F8;
+      --ink: #0F172A;
+      --muted: #5C6878;
+      --accent: #1F6BFF;
+      --accent-2: #22D3EE;
+      --card: rgba(255,255,255,0.78);
+      --border: rgba(255,255,255,0.6);
+      --shadow: 0 16px 40px rgba(15,23,42,0.16);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter Tight', 'Sora', system-ui, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(1100px 700px at 10% -12%, rgba(31,107,255,0.16), transparent 60%),
+                  radial-gradient(900px 500px at 92% -18%, rgba(34,211,238,0.18), transparent 60%),
+                  linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      min-height: 100vh;
+    }
+    .shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 28px 80px;
+    }
+    .topbar {
+      position: sticky;
+      top: 12px;
+      z-index: 10;
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.7));
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .brand {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 6px 14px rgba(31,107,255,0.35);
+    }
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .nav a {
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: 0 12px 26px rgba(15,23,42,0.12);
+    }
+    .nav a.active {
+      background: linear-gradient(135deg, rgba(31,107,255,0.2), rgba(34,211,238,0.2));
+      border-color: rgba(31,107,255,0.4);
+    }
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 22px;
+      margin-top: 32px;
+      align-items: stretch;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+    .card h2 {
+      font-family: 'Sora', sans-serif;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .kpi {
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 4px;
+    }
+    .kpi span { color: var(--muted); font-size: 12px; }
+    .kpi strong { font-size: 20px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.65);
+    }
+    .tag {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(31,107,255,0.12);
+      color: #1A4FCC;
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 1100px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand"><span class="brand-dot"></span>Planify Studio</div>
+      <div class="nav">
+        <a class="active" href="#">Dashboard</a>
+        <a href="#">Missions</a>
+        <a href="#">Materiel</a>
+        <a href="#">Facturation</a>
+        <a href="#">IA</a>
+        <a href="#">Parametres</a>
+      </div>
+      <div class="user"><div class="avatar"></div><div>gnizery</div></div>
+    </div>
+
+    <section class="hero">
+      <div class="card">
+        <h2>Vue generale</h2>
+        <p style="color: var(--muted);">Resume clair, priorites du jour et actions rapides.</p>
+        <div class="kpis">
+          <div class="kpi"><span>Missions aujourd'hui</span><strong>6</strong></div>
+          <div class="kpi"><span>CA mensuel</span><strong>18 540€</strong></div>
+          <div class="kpi"><span>Materiel dispo</span><strong>92%</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Actions</h2>
+        <div class="list">
+          <div class="row"><span>Creer une mission</span><span class="tag">Rapide</span></div>
+          <div class="row"><span>Envoyer un devis</span><span class="tag">2 min</span></div>
+          <div class="row"><span>Lancer IA planning</span><span class="tag">Nouveau</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h3 style="font-family: 'Sora'; font-size: 20px;">Missions en cours</h3>
+        <div class="list">
+          <div class="row"><span>Villa Aurora</span><span>08/02</span></div>
+          <div class="row"><span>Hotel Azure</span><span>10/02</span></div>
+          <div class="row"><span>Studio Metro</span><span>12/02</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-family: 'Sora'; font-size: 20px;">Materiel critique</h3>
+        <div class="list">
+          <div class="row"><span>Pack Sono X2</span><span class="tag">Maintenance</span></div>
+          <div class="row"><span>Projecteur Neo</span><span class="tag">Retour</span></div>
+          <div class="row"><span>Mic HF #4</span><span class="tag">Reserve</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-family: 'Sora'; font-size: 20px;">Facturation</h3>
+        <div class="list">
+          <div class="row"><span>Facture F-204</span><span>Payee</span></div>
+          <div class="row"><span>Devis D-112</span><span>Envoye</span></div>
+          <div class="row"><span>Facture F-205</span><span>Relance</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Layout 1 — Top navigation, centre clair, style studio premium.</div>
+  </div>
+</body>
+</html>

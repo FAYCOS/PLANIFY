@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-header">
+        <div>
+            <p class="finance-eyebrow">Finance</p>
+            <h1>Transactions</h1>
+            <p class="finance-subtitle">Suivez les encaissements et leurs justificatifs.</p>
+        </div>
+        <div class="finance-actions">
+            <button class="btn btn-outline-primary" type="button" disabled>Récupérer des transactions</button>
+            <span class="finance-sync-pill"><i class="fas fa-check-circle"></i> Synchronisés</span>
+        </div>
+    </div>
+
+    <div class="finance-card finance-filters-card">
+        <form method="GET" class="finance-filters-form" data-no-csrf="true">
+            <div class="finance-search">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" placeholder="Rechercher une transaction..." disabled>
+            </div>
+            <div class="finance-chip">Statut</div>
+            <div class="finance-filter-group">
+                <input type="date" id="date_from" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from or '' }}">
+            </div>
+            <div class="finance-filter-group">
+                <input type="date" id="date_to" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to or '' }}">
+            </div>
+            <div class="finance-filter-group">
+                <select id="statut" name="statut" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="reussi" {% if filters.statut == 'reussi' %}selected{% endif %}>Réussi</option>
+                    <option value="en_attente" {% if filters.statut == 'en_attente' %}selected{% endif %}>En attente</option>
+                    <option value="echoue" {% if filters.statut == 'echoue' %}selected{% endif %}>Échoué</option>
+                </select>
+            </div>
+            <div class="finance-filter-group">
+                <select id="mode" name="mode" class="form-select form-select-sm">
+                    <option value="">Tous modes</option>
+                    <option value="stripe" {% if filters.mode == 'stripe' %}selected{% endif %}>Stripe</option>
+                    <option value="virement" {% if filters.mode == 'virement' %}selected{% endif %}>Virement</option>
+                    <option value="especes" {% if filters.mode == 'especes' %}selected{% endif %}>Espèces</option>
+                    <option value="cheque" {% if filters.mode == 'cheque' %}selected{% endif %}>Chèque</option>
+                    <option value="carte" {% if filters.mode == 'carte' %}selected{% endif %}>Carte</option>
+                </select>
+            </div>
+            <div class="finance-filter-group">
+                <input type="number" step="0.01" id="montant_min" name="montant_min" class="form-control form-control-sm" placeholder="Min" value="{{ filters.montant_min or '' }}">
+            </div>
+            <div class="finance-filter-group">
+                <input type="number" step="0.01" id="montant_max" name="montant_max" class="form-control form-control-sm" placeholder="Max" value="{{ filters.montant_max or '' }}">
+            </div>
+            <button class="btn btn-sm btn-primary" type="submit">Filtrer</button>
+            <a href="{{ url_for('paiements') }}" class="btn btn-sm btn-outline-secondary">Réinitialiser</a>
+        </form>
+    </div>
+
+    <div class="finance-split-panel">
+        <div class="finance-card finance-table-card">
+            <div class="table-responsive">
+                <table class="table finance-table scan-aligned-table scan-cols-6" data-no-contextbox="true">
+                    <thead>
+                        <tr>
+                            <th style="width: 48px;"><input type="checkbox" disabled></th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                            <th>Libellé</th>
+                            <th class="text-end">Montant</th>
+                            <th>Tiers</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paiement in paiements.items %}
+                        {% set date_label = paiement.date_paiement.strftime('%d/%m/%Y') if paiement.date_paiement else paiement.date_creation.strftime('%d/%m/%Y') if paiement.date_creation else '-' %}
+                        <tr class="payment-row{% if selected_paiement and paiement.id == selected_paiement.id %} is-active{% endif %}"
+                            data-payment-row="true"
+                            data-id="{{ paiement.id }}"
+                            data-amount="{{ '%.2f'|format(paiement.montant or 0) }}"
+                            data-currency="{{ paiement.devise or 'EUR' }}"
+                            data-client="{{ paiement.client_nom or '-' }}"
+                            data-date="{{ date_label }}"
+                            data-mode="{{ paiement.mode_paiement|default('-', true)|replace('_', ' ')|title }}"
+                            data-status="{{ paiement.statut|replace('_',' ')|title }}"
+                            data-facture="{{ paiement.facture.numero if paiement.facture else '' }}"
+                            data-facture-id="{{ paiement.facture.id if paiement.facture else '' }}"
+                            data-devis="{{ paiement.devis.numero if paiement.devis else '' }}"
+                            data-devis-id="{{ paiement.devis.id if paiement.devis else '' }}"
+                            data-justif-url="{{ url_for('static', filename=paiement.justificatif_path) if paiement.justificatif_path else '' }}"
+                            data-comment="{{ paiement.commentaire|default('', true)|e }}">
+                            <td><input type="checkbox" disabled></td>
+                            <td>
+                                <span class="finance-badge {{ 'finance-badge-success' if paiement.statut == 'reussi' else 'finance-badge-warning' if paiement.statut == 'en_attente' else 'finance-badge-danger' }}">
+                                    {{ paiement.statut|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td>{{ date_label }}</td>
+                            <td>{{ paiement.description or paiement.numero }}</td>
+                            <td class="text-end"><strong>{{ "%.2f"|format(paiement.montant or 0) }} {{ paiement.devise or 'EUR' }}</strong></td>
+                            <td>{{ paiement.client_nom or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Aucun paiement trouvé.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if paiements.pages > 1 %}
+            <nav aria-label="Pagination paiements" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if paiements.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('paiements', page=paiements.prev_num, date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, mode=filters.mode, montant_min=filters.montant_min, montant_max=filters.montant_max) }}">Précédent</a>
+                    </li>
+                    {% endif %}
+                    {% for page_num in paiements.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != paiements.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('paiements', page=page_num, date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, mode=filters.mode, montant_min=filters.montant_min, montant_max=filters.montant_max) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if paiements.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('paiements', page=paiements.next_num, date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, mode=filters.mode, montant_min=filters.montant_min, montant_max=filters.montant_max) }}">Suivant</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+
+        <aside class="finance-side-panel">
+            {% set panel = selected_paiement %}
+            <div class="finance-side-card">
+                <div class="finance-side-header">
+                    <div>
+                        <div class="finance-side-label">Montant</div>
+                        <div id="panel-amount" class="finance-side-amount">{{ "%.2f"|format(panel.montant or 0) if panel else '0.00' }} {{ panel.devise if panel else 'EUR' }}</div>
+                        <div class="finance-meta" id="panel-client">{{ panel.client_nom if panel else '-' }}</div>
+                    </div>
+                    <div id="panel-date" class="finance-side-date">{{ panel.date_paiement.strftime('%d/%m/%Y') if panel and panel.date_paiement else panel.date_creation.strftime('%d/%m/%Y') if panel and panel.date_creation else '-' }}</div>
+                </div>
+                <div class="finance-side-info">
+                    <div><span>Mode</span><strong id="panel-mode">{{ panel.mode_paiement|default('-', true)|replace('_',' ')|title if panel else '-' }}</strong></div>
+                    <div><span>Statut</span><strong id="panel-status">{{ panel.statut|replace('_',' ')|title if panel else '-' }}</strong></div>
+                    <div><span>Facture</span>
+                        <strong id="panel-facture">
+                            {% if panel and panel.facture %}
+                            <a href="{{ url_for('detail_facture', facture_id=panel.facture.id) }}">{{ panel.facture.numero }}</a>
+                            {% else %}-{% endif %}
+                        </strong>
+                    </div>
+                    <div><span>Devis</span>
+                        <strong id="panel-devis">
+                            {% if panel and panel.devis %}
+                            <a href="{{ url_for('detail_devis', devis_id=panel.devis.id) }}">{{ panel.devis.numero }}</a>
+                            {% else %}-{% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="finance-side-card">
+                <div class="finance-side-section">
+                    <h6>Justificatif</h6>
+                    <div id="panel-justif">
+                        {% if panel and panel.justificatif_path %}
+                        <a href="{{ url_for('static', filename=panel.justificatif_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">Voir le justificatif</a>
+                        {% else %}
+                        <div class="text-muted">Déposez un fichier PDF ou image.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <form id="justif-form" method="POST" enctype="multipart/form-data" action="{{ url_for('upload_paiement_justificatif', paiement_id=panel.id) if panel else '#' }}">
+                    <div class="finance-upload">
+                        <input type="file" name="justificatif_file" accept=".pdf,.png,.jpg,.jpeg" class="form-control">
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Commentaire</label>
+                        <textarea name="commentaire" class="form-control" rows="4" id="panel-comment">{{ panel.commentaire if panel else '' }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+                </form>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function selectPaymentRow(row) {
+        document.querySelectorAll('.payment-row').forEach(el => el.classList.remove('is-active'));
+        row.classList.add('is-active');
+        const data = row.dataset;
+        const amount = document.getElementById('panel-amount');
+        const client = document.getElementById('panel-client');
+        const date = document.getElementById('panel-date');
+        const mode = document.getElementById('panel-mode');
+        const status = document.getElementById('panel-status');
+        const facture = document.getElementById('panel-facture');
+        const devis = document.getElementById('panel-devis');
+        const justif = document.getElementById('panel-justif');
+        const comment = document.getElementById('panel-comment');
+        const form = document.getElementById('justif-form');
+
+        amount.textContent = `${data.amount} ${data.currency}`;
+        client.textContent = data.client || '-';
+        date.textContent = data.date || '-';
+        mode.textContent = data.mode || '-';
+        status.textContent = data.status || '-';
+
+        if (data.factureId) {
+            facture.innerHTML = `<a href="/factures/${data.factureId}">${data.facture}</a>`;
+        } else {
+            facture.textContent = '-';
+        }
+        if (data.devisId) {
+            devis.innerHTML = `<a href="/devis/${data.devisId}">${data.devis}</a>`;
+        } else {
+            devis.textContent = '-';
+        }
+
+        if (data.justifUrl) {
+            justif.innerHTML = `<a href="${data.justifUrl}" target="_blank" class="btn btn-sm btn-outline-primary">Voir le justificatif</a>`;
+        } else {
+            justif.innerHTML = '<div class="text-muted">Déposez un fichier PDF ou image.</div>';
+        }
+        if (comment) {
+            comment.value = data.comment || '';
+        }
+        if (form && data.id) {
+            form.action = `/paiements/${data.id}/justificatif`;
+        }
+    }
+
+    document.querySelectorAll('[data-payment-row="true"]').forEach(row => {
+        row.addEventListener('click', () => selectPaymentRow(row));
+    });
+</script>
+{% endblock %}

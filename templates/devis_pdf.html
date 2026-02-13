@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Devis {{ devis.numero }} - PDF{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-4xl mx-auto">
+        <!-- Boutons d'action -->
+        <div class="flex justify-between items-center mb-6">
+            <a href="{{ url_for('detail_devis', devis_id=devis.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Retour au devis
+            </a>
+            
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="fas fa-print"></i>
+                    Imprimer
+                </button>
+                <button onclick="downloadPDF()" class="btn btn-info">
+                    <i class="fas fa-download"></i>
+                    Télécharger PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Devis format PDF -->
+        <div class="bg-white shadow-lg p-8 print:shadow-none print:p-0" id="devis-content">
+            <!-- En-tête avec design professionnel -->
+            <div class="bg-gray-100 text-gray-900 p-8 rounded-lg mb-8 print:bg-gray-800">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">DEVIS</h1>
+                        <p class="text-xl opacity-90">Mission Prestataire Professionnelle</p>
+                        <div class="mt-4 flex items-center">
+                            <i class="fas fa-music mr-2"></i>
+                            <span class="text-lg">Planify</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="bg-white text-gray-700 px-6 py-3 rounded-lg inline-block">
+                            <div class="text-2xl font-bold">{{ devis.numero }}</div>
+                        </div>
+                        <div class="mt-4 text-right">
+                            <p class="text-sm opacity-90">
+                                <i class="fas fa-calendar mr-1"></i>
+                                {{ devis.date_creation.strftime('%d/%m/%Y') }}
+                            </p>
+                            {% if devis.date_validite %}
+                            <p class="text-sm opacity-90">
+                                <i class="fas fa-clock mr-1"></i>
+                                Valide jusqu'au {{ devis.date_validite.strftime('%d/%m/%Y') }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations client et prestation -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Client -->
+                <div class="bg-gradient-to-br bg-white p-6 rounded-xl border-l-4 border-blue-500">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-500 text-gray-900 p-2 rounded-full mr-3">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Facturé à</h3>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="font-bold text-xl text-gray-900">{{ devis.client_nom }}</p>
+                        {% if devis.client_email %}
+                            <p class="flex items-center text-gray-700">
+                                <i class="fas fa-envelope mr-2 text-gray-600"></i>
+                                {{ devis.client_email }}
+                            </p>
+                        {% endif %}
+                        {% if devis.client_telephone %}
+                            <p class="flex items-center text-gray-700">
+                                <i class="fas fa-phone mr-2 text-gray-600"></i>
+                                {{ devis.client_telephone }}
+                            </p>
+                        {% endif %}
+                        {% if devis.client_adresse %}
+                            <p class="flex items-start text-gray-700">
+                                <i class="fas fa-map-marker-alt mr-2 text-gray-600 mt-1"></i>
+                                <span class="whitespace-pre-line">{{ devis.client_adresse }}</span>
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Prestation -->
+                <div class="bg-gradient-to-br bg-white p-6 rounded-xl border-l-4 border-purple-500">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-purple-500 text-gray-900 p-2 rounded-full mr-3">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Mission</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <p class="font-bold text-xl text-gray-900">{{ devis.prestation_titre }}</p>
+                        <p class="flex items-center text-gray-700">
+                            <i class="fas fa-map-marker-alt mr-2 text-gray-600"></i>
+                            {{ devis.lieu }}
+                        </p>
+                        <p class="flex items-center text-gray-700">
+                            <i class="fas fa-calendar mr-2 text-gray-600"></i>
+                            {{ devis.date_prestation.strftime('%d/%m/%Y') }}
+                        </p>
+                        <p class="flex items-center text-gray-700">
+                            <i class="fas fa-clock mr-2 text-gray-600"></i>
+                            {{ devis.heure_debut.strftime('%H:%M') }} - {{ devis.heure_fin.strftime('%H:%M') }}
+                        </p>
+                        {% if devis.dj %}
+                            <p class="flex items-center text-gray-700">
+                                <i class="fas fa-user-tie mr-2 text-gray-600"></i>
+                                Prestataire : {{ devis.dj.nom }}
+                            </p>
+                        {% endif %}
+                        {% if devis.prestation_description %}
+                            <div class="mt-3 p-3 bg-white rounded-lg">
+                                <p class="text-sm text-gray-600">{{ devis.prestation_description }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détail tarification -->
+            <div class="mb-8">
+                <div class="flex items-center mb-6">
+                    <div class="bg-green-500 text-gray-900 p-3 rounded-full mr-4">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">Détail des missions</h3>
+                </div>
+                <div class="overflow-x-auto bg-white rounded-xl shadow-lg">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-gray-900">
+                                <th class="px-6 py-4 text-left font-semibold">Description</th>
+                                <th class="px-6 py-4 text-center font-semibold">Quantité</th>
+                                <th class="px-6 py-4 text-right font-semibold">Prix unitaire</th>
+                                <th class="px-6 py-4 text-right font-semibold">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        <div class="bg-gray-100 text-gray-700 p-2 rounded-full mr-3">
+                                            <i class="fas fa-music"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">Mission Prestataire</p>
+                                            <p class="text-sm text-gray-500">{{ devis.duree_heures }} heures</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center border-b border-gray-200">
+                                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">
+                                        {{ devis.duree_heures }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-semibold">
+                                    {{ "%.2f"|format(devis.tarif_horaire) }} €
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-bold text-gray-700">
+                                    {{ "%.2f"|format(devis.tarif_horaire * devis.duree_heures) }} €
+                                </td>
+                            </tr>
+                            
+                            {% if devis.frais_transport > 0 %}
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        <div class="bg-green-100 text-gray-700 p-2 rounded-full mr-3">
+                                            <i class="fas fa-truck"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">Frais de transport</p>
+                                            <p class="text-sm text-gray-500">Déplacement</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center border-b border-gray-200">
+                                    <span class="bg-green-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">1</span>
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-semibold">
+                                    {{ "%.2f"|format(devis.frais_transport) }} €
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-bold text-gray-700">
+                                    {{ "%.2f"|format(devis.frais_transport) }} €
+                                </td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if devis.frais_materiel > 0 %}
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        <div class="bg-purple-100 text-gray-700 p-2 rounded-full mr-3">
+                                            <i class="fas fa-tools"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">Frais de équipement</p>
+                                            <p class="text-sm text-gray-500">Équipement</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center border-b border-gray-200">
+                                    <span class="bg-purple-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">1</span>
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-semibold">
+                                    {{ "%.2f"|format(devis.frais_materiel) }} €
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-bold text-gray-700">
+                                    {{ "%.2f"|format(devis.frais_materiel) }} €
+                                </td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if devis.remise_pourcentage > 0 or devis.remise_montant > 0 %}
+                            <tr class="bg-red-50 hover:bg-red-100 transition-colors">
+                                <td class="px-6 py-4 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        <div class="bg-red-100 text-gray-700 p-2 rounded-full mr-3">
+                                            <i class="fas fa-percentage"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-red-900">Remise</p>
+                                            {% if devis.remise_pourcentage > 0 %}
+                                                <p class="text-sm text-gray-700">{{ devis.remise_pourcentage }}%</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center border-b border-gray-200">
+                                    <span class="bg-red-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">-</span>
+                                </td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-semibold">-</td>
+                                <td class="px-6 py-4 text-right border-b border-gray-200 font-bold text-gray-700">
+                                    -{{ "%.2f"|format((devis.remise_pourcentage * devis.montant_ht / 100) if devis.remise_pourcentage > 0 else devis.remise_montant) }} €
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-100">
+                                <td colspan="3" class="px-6 py-4 font-bold text-gray-800">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calculator mr-2 text-gray-600"></i>
+                                        Sous-total HT
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right font-bold text-gray-800 text-lg">
+                                    {{ "%.2f"|format(devis.montant_ht) }} €
+                                </td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td colspan="3" class="px-6 py-4 font-semibold text-gray-700">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-receipt mr-2 text-gray-500"></i>
+                                        TVA ({{ devis.taux_tva }}%)
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right font-semibold text-gray-700">
+                                    {{ "%.2f"|format(devis.montant_tva) }} €
+                                </td>
+                            </tr>
+                            <tr class="bg-gray-100 text-gray-900">
+                                <td colspan="3" class="px-6 py-6 text-xl font-bold">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-euro-sign mr-3"></i>
+                                        Total TTC
+                                    </div>
+                                </td>
+                                <td class="px-6 py-6 text-right text-2xl font-bold">
+                                    {{ "%.2f"|format(devis.montant_ttc) }} €
+                                </td>
+                            </tr>
+                            {% if devis.acompte_requis and devis.acompte_pourcentage > 0 %}
+                            <tr class="bg-white">
+                                <td colspan="3" class="px-6 py-4 font-semibold text-gray-700">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-hand-holding-usd mr-2 text-gray-500"></i>
+                                        Acompte ({{ devis.acompte_pourcentage }}%)
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right font-semibold text-gray-700">
+                                    {{ "%.2f"|format(devis.acompte_montant) }} €
+                                </td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td colspan="3" class="px-6 py-4 font-semibold text-gray-700">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-balance-scale mr-2 text-gray-500"></i>
+                                        Solde restant
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right font-semibold text-gray-700">
+                                    {{ "%.2f"|format(devis.montant_ttc - devis.acompte_montant) }} €
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Conditions -->
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 p-8 rounded-xl border-l-4 border-blue-500 mt-8">
+                <div class="flex items-center mb-6">
+                    <div class="bg-blue-500 text-gray-900 p-3 rounded-full mr-4">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">Conditions générales</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="bg-green-100 text-gray-700 p-2 rounded-full mr-3 mt-1">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">Validité</p>
+                                <p class="text-sm text-gray-600">Le présent devis est valable 30 jours à compter de sa date d'émission.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-gray-100 text-gray-700 p-2 rounded-full mr-3 mt-1">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">Paiement</p>
+                                {% if devis.acompte_requis and devis.acompte_pourcentage > 0 %}
+                                <p class="text-sm text-gray-600">Un acompte de {{ devis.acompte_pourcentage }}% sera demandé à la signature du contrat. Le solde sera réglé le jour de la mission.</p>
+                                {% else %}
+                                <p class="text-sm text-gray-600">Le règlement est exigible à la mission, sauf accord particulier.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="bg-orange-100 text-orange-600 p-2 rounded-full mr-3 mt-1">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">Annulation</p>
+                                <p class="text-sm text-gray-600">En cas d'annulation moins de 48h avant la mission, 50% du montant sera dû.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-purple-100 text-gray-700 p-2 rounded-full mr-3 mt-1">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">Assurance</p>
+                                <p class="text-sm text-gray-600">L'équipement est fourni par nos soins et assuré.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signature -->
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-gray-500 text-gray-900 p-2 rounded-full mr-3">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800">Client</h4>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Bon pour accord,</p>
+                    <div class="border-b-2 border-gray-400 w-48 h-16"></div>
+                    <p class="text-sm text-gray-500 mt-2">Signature du client</p>
+                </div>
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-500 text-gray-900 p-2 rounded-full mr-3">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800">Prestataire</h4>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Émis par,</p>
+                    <div class="border-b-2 border-blue-400 w-48 h-16"></div>
+                    <p class="text-sm text-gray-500 mt-2">Signature</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        background: white !important;
+    }
+    
+    .print\\:shadow-none {
+        box-shadow: none !important;
+    }
+    
+    .print\\:p-0 {
+        padding: 0 !important;
+    }
+    
+    .print\\:bg-gray-800 {
+        background: #1f2937 !important;
+    }
+}
+
+#devis-content {
+    font-family: 'Inter', 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #1f2937;
+}
+
+/* Animations et effets */
+.hover\\:bg-gray-50:hover {
+    background-color: #f9fafb;
+    transition: background-color 0.3s ease;
+}
+
+.hover\\:bg-red-100:hover {
+    background-color: #fee2e2;
+    transition: background-color 0.3s ease;
+}
+
+/* Amélioration des gradients */
+.bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+/* Effets d'ombre personnalisés */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Bordures arrondies */
+.rounded-xl {
+    border-radius: 0.75rem;
+}
+
+.rounded-full {
+    border-radius: 9999px;
+}
+
+/* Espacement personnalisé */
+.space-y-2 > * + * {
+    margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+    margin-top: 1.5rem;
+}
+</style>
+
+<script>
+function downloadPDF() {
+    // Pour l'instant, on utilise la fonction d'impression du navigateur
+    // Plus tard, on pourra implémenter une vraie génération PDF avec jsPDF
+    window.print();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Prestataires - Planify{% endblock %}
+{% block page_title %}Gestion des Prestataires{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Actions -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-4">
+            <a href="{{ url_for('nouveau_dj') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Nouveau Prestataire
+            </a>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-sm text-gray-600">
+                {{ djs|length }} Prestataire(s) enregistré(s)
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des prestataires -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for dj in djs %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-user"></i>
+                    {{ dj.nom }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Contact</label>
+                        <p class="text-gray-900">{{ dj.contact or 'Non renseigné' }}</p>
+                    </div>
+                    
+                    {% if dj.notes %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Notes</label>
+                        <p class="text-gray-900">{{ dj.notes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Missions</label>
+                        <div class="flex gap-2 mt-1">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ dj.prestations|length }} mission(s)
+                            </span>
+                            {% if dj.prestations %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {{ dj.prestations|selectattr('statut', 'equalto', 'confirmee')|list|length }} confirmée(s)
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if dj.prestations %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Prochaine mission</label>
+                        {% set prochaine_prestation = dj.prestations|selectattr('date_debut', 'ge', today)|sort(attribute='date_debut')|first %}
+                        {% if prochaine_prestation %}
+                        <div class="text-sm">
+                            <div class="font-medium">{{ prochaine_prestation.client }}</div>
+                            <div class="text-gray-500">{{ prochaine_prestation.date_debut.strftime('%d/%m/%Y') }} - {{ prochaine_prestation.lieu }}</div>
+                        </div>
+                        {% else %}
+                        <p class="text-gray-500 text-sm">Aucune mission à venir</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex gap-2 pt-4">
+                        <a href="{{ url_for('detail_dj', dj_id=dj.id) }}" 
+                           class="btn btn-sm btn-primary flex-1">
+                            <i class="fas fa-eye"></i>
+                            Voir
+                        </a>
+                        <a href="{{ url_for('modifier_dj', dj_id=dj.id) }}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('supprimer_dj', dj_id=dj.id) }}" 
+                              style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce prestataire ?')">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not djs %}
+    <div class="text-center py-12">
+        <i class="fas fa-user text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-600 mb-2">Aucun Prestataire enregistré</h3>
+        <p class="text-gray-500 mb-6">Commencez par ajouter vos premiers Prestataires</p>
+        <button class="btn btn-primary" onclick="addDJ()">
+            <i class="fas fa-plus"></i>
+            Ajouter un Prestataire
+        </button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

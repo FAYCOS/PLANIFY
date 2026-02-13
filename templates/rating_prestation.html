@@ -1,0 +1,132 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact" %}
+{% block title %}Notation prestation{% endblock %}
+
+{% block extra_head %}
+<style>
+    .rating-block { margin-bottom: 18px; }
+    .rating-title { font-weight: 600; margin-bottom: 8px; }
+    .rating {
+        display: inline-flex;
+        flex-direction: row-reverse;
+        gap: 6px;
+    }
+    .rating input { display: none; }
+    .rating label {
+        font-size: 28px;
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: transform 0.15s ease, color 0.15s ease;
+    }
+    .rating label:hover,
+    .rating label:hover ~ label {
+        color: #f59e0b;
+    }
+    .rating input:checked ~ label {
+        color: #f59e0b;
+    }
+    textarea {
+        width: 100%;
+        min-height: 100px;
+        border-radius: 12px;
+        border: 1px solid var(--nav-border);
+        padding: 12px;
+        font-size: 14px;
+        resize: vertical;
+        background: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        {% if invalid %}
+            <div class="public-status error">
+                <div class="public-status-icon"><i class="fa-solid fa-link-slash"></i></div>
+                <h1>Lien invalide</h1>
+                <p>Ce lien de notation est invalide.</p>
+            </div>
+        {% elif expired %}
+            <div class="public-status error">
+                <div class="public-status-icon"><i class="fa-solid fa-hourglass-end"></i></div>
+                <h1>Lien expiré</h1>
+                <p>Ce lien de notation a expiré. Merci de contacter votre prestataire.</p>
+            </div>
+        {% elif submitted %}
+            <div class="public-status success">
+                <div class="public-status-icon"><i class="fa-solid fa-star"></i></div>
+                <h1>Merci pour votre retour !</h1>
+                <p>Votre notation a bien été enregistrée.</p>
+            </div>
+        {% else %}
+            <h1 class="page-title" style="font-size:24px;">
+                <i class="fa-solid fa-star"></i> Notez votre prestation
+            </h1>
+            <p>Votre retour nous aide à améliorer la qualité du service.</p>
+
+            <div class="context-card" style="margin-bottom: 18px;">
+                <div class="context-card-header">
+                    <div class="context-title">Détails</div>
+                </div>
+                <div class="context-row">
+                    <span>Client</span>
+                    <strong>{{ prestation.client if prestation else '—' }}</strong>
+                </div>
+                {% if prestation %}
+                <div class="context-row">
+                    <span>Date</span>
+                    <strong>{{ prestation.date_debut.strftime('%d/%m/%Y') }}</strong>
+                </div>
+                {% endif %}
+                {% if dj %}
+                <div class="context-row">
+                    <span>Prestataire</span>
+                    <strong>{{ dj.nom }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="post">
+                {% if csrf_token %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                {% endif %}
+                <div class="rating-block">
+                    <div class="rating-title">Note du prestataire</div>
+                    <div class="rating">
+                        <input type="radio" id="dj-5" name="rating_dj" value="5" required><label for="dj-5">★</label>
+                        <input type="radio" id="dj-4" name="rating_dj" value="4"><label for="dj-4">★</label>
+                        <input type="radio" id="dj-3" name="rating_dj" value="3"><label for="dj-3">★</label>
+                        <input type="radio" id="dj-2" name="rating_dj" value="2"><label for="dj-2">★</label>
+                        <input type="radio" id="dj-1" name="rating_dj" value="1"><label for="dj-1">★</label>
+                    </div>
+                </div>
+
+                {% if technicien %}
+                <div class="rating-block">
+                    <div class="rating-title">Note du prestataire technique</div>
+                    <div class="rating">
+                        <input type="radio" id="tech-5" name="rating_technicien" value="5"><label for="tech-5">★</label>
+                        <input type="radio" id="tech-4" name="rating_technicien" value="4"><label for="tech-4">★</label>
+                        <input type="radio" id="tech-3" name="rating_technicien" value="3"><label for="tech-3">★</label>
+                        <input type="radio" id="tech-2" name="rating_technicien" value="2"><label for="tech-2">★</label>
+                        <input type="radio" id="tech-1" name="rating_technicien" value="1"><label for="tech-1">★</label>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="rating-block">
+                    <div class="rating-title">Commentaire (optionnel)</div>
+                    <textarea name="commentaire" placeholder="Votre retour..."></textarea>
+                </div>
+
+                <button class="btn btn-primary" type="submit">Envoyer ma note</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

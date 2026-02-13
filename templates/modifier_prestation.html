@@ -1,0 +1,751 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier mission - Planify{% endblock %}
+{% block page_title %}Modifier {{ prestation.client }}{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-4xl mx-auto">
+        <form method="POST" class="space-y-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-calendar-edit"></i>
+                        Informations de la mission
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label" for="client">Client *</label>
+                            <input type="text" id="client" name="client" class="form-control"
+                                   value="{{ prestation.client }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="client_telephone">Téléphone client</label>
+                            <input type="tel" id="client_telephone" name="client_telephone" class="form-control"
+                                   placeholder="06 12 34 56 78"
+                                   value="{{ prestation.client_telephone or '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="client_email">Email client</label>
+                            <input type="email" id="client_email" name="client_email" class="form-control"
+                                   placeholder="client@example.com"
+                                   value="{{ prestation.client_email or '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="lieu">Lieu *</label>
+                            <input type="text" id="lieu" name="lieu" class="form-control"
+                                   value="{{ prestation.lieu }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="dj_id">Prestataire *</label>
+                            <select id="dj_id" name="dj_id" class="form-control form-select" required>
+                                <option value="">Sélectionner un Prestataire</option>
+                                {% for dj in djs %}
+                                <option value="{{ dj.id }}" {% if dj.id == prestation.dj_id %}selected{% endif %}>
+                                    {{ dj.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="technicien_id">Prestataire technique (optionnel)</label>
+                            <select id="technicien_id" name="technicien_id" class="form-control form-select">
+                                <option value="">Aucun prestataire technique</option>
+                                {% for technicien in techniciens %}
+                                <option value="{{ technicien.id }}" {% if technicien.id == prestation.technicien_id %}selected{% endif %}>
+                                    {{ technicien.nom }} {{ technicien.prenom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="statut">Statut</label>
+                            <select id="statut" name="statut" class="form-control form-select">
+                                <option value="planifiee" {% if prestation.statut == 'planifiee' %}selected{% endif %}>Planifiée</option>
+                                <option value="confirmee" {% if prestation.statut == 'confirmee' %}selected{% endif %}>Confirmée</option>
+                                <option value="terminee" {% if prestation.statut == 'terminee' %}selected{% endif %}>Terminée</option>
+                                <option value="annulee" {% if prestation.statut == 'annulee' %}selected{% endif %}>Annulée</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="date_debut">Date de début *</label>
+                            <input type="date" id="date_debut" name="date_debut" class="form-control"
+                                   value="{{ prestation.date_debut.strftime('%Y-%m-%d') if prestation.date_debut else '' }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="date_fin">Date de fin *</label>
+                            <input type="date" id="date_fin" name="date_fin" class="form-control"
+                                   value="{{ prestation.date_fin.strftime('%Y-%m-%d') if prestation.date_fin else '' }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="heure_debut">Heure de début *</label>
+                            <input type="time" id="heure_debut" name="heure_debut" class="form-control"
+                                   value="{{ prestation.heure_debut.strftime('%H:%M') if prestation.heure_debut else '20:00' }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="heure_fin">Heure de fin *</label>
+                            <input type="time" id="heure_fin" name="heure_fin" class="form-control"
+                                   value="{{ prestation.heure_fin.strftime('%H:%M') if prestation.heure_fin else '02:00' }}" required>
+                        </div>
+
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label" for="notes">Notes</label>
+                            <textarea id="notes" name="notes" class="form-control" rows="3"
+                                      placeholder="Notes supplémentaires...">{{ prestation.notes or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if custom_fields_definitions %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-sliders-h"></i>
+                        Champs personnalisés
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% for field in custom_fields_definitions %}
+                        <div class="form-group {% if field.full_width %}md:col-span-2{% endif %}">
+                            <label class="form-label" for="custom_{{ field.key }}">
+                                {{ field.label }}{% if field.required %} *{% endif %}
+                            </label>
+                            {% set value = (custom_fields_values or {}).get(field.key, '') %}
+                            {% if field.type == 'textarea' %}
+                            <textarea id="custom_{{ field.key }}" name="custom_{{ field.key }}" class="form-control" rows="3"
+                                      placeholder="{{ field.placeholder or '' }}">{{ value }}</textarea>
+                            {% elif field.type == 'select' %}
+                            <select id="custom_{{ field.key }}" name="custom_{{ field.key }}" class="form-control form-select">
+                                <option value="">Sélectionner...</option>
+                                {% for option in field.options %}
+                                <option value="{{ option }}" {% if value == option %}selected{% endif %}>{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="{{ 'number' if field.type == 'number' else ('date' if field.type == 'date' else 'text') }}"
+                                   id="custom_{{ field.key }}" name="custom_{{ field.key }}" class="form-control"
+                                   value="{{ value }}"
+                                   placeholder="{{ field.placeholder or '' }}">
+                            {% endif %}
+                            {% if field.help %}
+                            <small class="text-muted">{{ field.help }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card" id="ai-assistant">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-robot"></i>
+                        Assistant IA
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-2">Suggestions automatiques pour optimiser la mission</p>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="ai_type_evenement">Type de mission</label>
+                            <input type="text" id="ai_type_evenement" class="form-control" placeholder="Maintenance, installation, événement...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ai_nombre_invites">Nombre d'invités</label>
+                            <input type="number" id="ai_nombre_invites" class="form-control" min="1" placeholder="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ai_style_musical">Style musical</label>
+                            <input type="text" id="ai_style_musical" class="form-control" placeholder="House, pop...">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary" onclick="aiSuggestDj()">
+                            <i class="fas fa-user"></i>
+                            Suggérer Prestataire
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="aiDetectConflicts()">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Détecter conflits
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="aiRecommendEquipment()">
+                            <i class="fas fa-boxes"></i>
+                            Recommander équipement
+                        </button>
+                    </div>
+
+                    <div id="ai-assistant-results" class="mt-4 space-y-2 text-sm"></div>
+                </div>
+            </div>
+
+            <div class="card" id="materiel-section">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i>
+                        Équipement conseillé
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-2">
+                        Nous proposons d'abord l'équipement disponible sur vos horaires.
+                        Vous pouvez ajouter du matériel manuellement si besoin.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button type="button" class="btn btn-secondary" id="refresh-materiel">
+                            <i class="fas fa-sync"></i>
+                            Actualiser
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="toggle-manual-materiel">
+                            <i class="fas fa-plus"></i>
+                            Ajouter du matériel manuellement
+                        </button>
+                    </div>
+
+                    <div id="materiel-info" class="text-sm text-gray-500 mb-4">
+                        Renseignez les dates et horaires pour afficher le matériel disponible.
+                    </div>
+                    <div id="materiel-distance-info" class="text-xs text-gray-500 mb-4 hidden"></div>
+
+                    <div id="materiel-recommended" class="checkbox-group hidden"></div>
+
+                    <div id="materiel-manual-wrapper" class="mt-6 hidden">
+                        <div class="text-sm text-gray-600 mb-2">Tout le matériel disponible</div>
+                        <div id="materiel-manual" class="checkbox-group"></div>
+                    </div>
+
+                    <div id="materiel-empty" class="text-center py-6 text-gray-500 hidden">
+                        <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
+                        <p>Aucun équipement disponible pour cette période</p>
+                        <a href="{{ url_for('materiels') }}" class="btn btn-primary mt-4">
+                            <i class="fas fa-plus"></i>
+                            Ajouter de l'équipement
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('prestations') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Sauvegarder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const EXCLUDE_PRESTATION_ID = {{ prestation.id if prestation is defined else 'null' }};
+const INITIAL_SELECTED_MATERIEL_IDS = new Set({{ prestation_materiel_ids | default([], true) | tojson }});
+const INITIAL_SELECTED_MATERIEL_QTYS = {{ prestation_materiel_quantities | default({}, true) | tojson }};
+const REQUIRE_MATERIEL_SELECTION = false;
+let hasRenderedMateriel = false;
+
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+function getDurationHours() {
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = document.getElementById('heure_fin').value;
+    if (!heureDebut || !heureFin) return 4;
+    const [h1, m1] = heureDebut.split(':').map(Number);
+    const [h2, m2] = heureFin.split(':').map(Number);
+    let start = h1 + (m1 / 60);
+    let end = h2 + (m2 / 60);
+    if (end < start) {
+        end += 24;
+    }
+    return Math.max(1, Math.round((end - start) * 2) / 2);
+}
+
+function getSelectedMaterielIds() {
+    const checked = document.querySelectorAll('input[name="materiels"]:checked');
+    return Array.from(checked).map(cb => parseInt(cb.value, 10)).filter(Number.isFinite);
+}
+
+function getSelectedIdsForRender() {
+    const currentIds = getSelectedMaterielIds();
+    if (!hasRenderedMateriel && currentIds.length === 0 && INITIAL_SELECTED_MATERIEL_IDS.size) {
+        return new Set(INITIAL_SELECTED_MATERIEL_IDS);
+    }
+    return new Set(currentIds);
+}
+
+function normalizeQuantity(value, maxValue) {
+    let qty = parseInt(value || '1', 10);
+    if (!Number.isFinite(qty) || qty < 1) {
+        qty = 1;
+    }
+    if (Number.isFinite(maxValue) && maxValue > 0 && qty > maxValue) {
+        qty = maxValue;
+    }
+    return qty;
+}
+
+function getSelectedMaterielQuantities() {
+    const quantities = {};
+    document.querySelectorAll('input[name="materiels"]:checked').forEach(cb => {
+        const input = document.getElementById(`quantite_${cb.value}`);
+        const maxValue = input ? parseInt(input.dataset.max || '0', 10) : 0;
+        const qty = normalizeQuantity(input ? input.value : 1, maxValue);
+        quantities[parseInt(cb.value, 10)] = qty;
+    });
+    return quantities;
+}
+
+function getSelectedQuantitiesForRender() {
+    const currentQuantities = getSelectedMaterielQuantities();
+    if (!hasRenderedMateriel && Object.keys(currentQuantities).length === 0) {
+        return INITIAL_SELECTED_MATERIEL_QTYS || {};
+    }
+    return currentQuantities;
+}
+
+function bindMaterielInputs() {
+    document.querySelectorAll('input[name="materiels"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const qtyInput = document.getElementById(`quantite_${cb.value}`);
+            if (!qtyInput) return;
+            qtyInput.disabled = !cb.checked;
+            if (cb.checked) {
+                const maxValue = parseInt(qtyInput.dataset.max || '0', 10);
+                qtyInput.value = normalizeQuantity(qtyInput.value, maxValue);
+            }
+        });
+    });
+
+    document.querySelectorAll('.materiel-qty-input').forEach(input => {
+        input.addEventListener('change', () => {
+            const maxValue = parseInt(input.dataset.max || '0', 10);
+            input.value = normalizeQuantity(input.value, maxValue);
+        });
+    });
+}
+
+function setAiResult(html) {
+    const container = document.getElementById('ai-assistant-results');
+    container.innerHTML = html;
+}
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
+function renderList(title, items) {
+    if (!items || items.length === 0) return '';
+    const listItems = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    return `
+        <div class="p-3 rounded-lg border border-gray-200">
+            <div class="font-semibold mb-2">${escapeHtml(title)}</div>
+            <ul class="list-disc pl-5 text-gray-700">${listItems}</ul>
+        </div>
+    `;
+}
+
+async function aiSuggestDj() {
+    const date = document.getElementById('date_debut').value;
+    const lieu = document.getElementById('lieu').value;
+    const style = document.getElementById('ai_style_musical').value;
+    if (!date) {
+        setAiResult('<div class="text-orange-600">Veuillez renseigner la date de début.</div>');
+        return;
+    }
+    setAiResult('<div class="text-blue-600">Recherche du meilleur Prestataire...</div>');
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const response = await fetch('/api/ai/suggest-dj', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ date, style_musical: style, localisation: lieu })
+    });
+    const data = await response.json();
+    if (data.success && data.dj) {
+        const djSelect = document.getElementById('dj_id');
+        djSelect.value = data.dj.id;
+        const djName = `${data.dj.nom || ''} ${data.dj.prenom || ''}`.trim();
+        setAiResult(`<div class="text-green-700">Prestataire recommandé : ${escapeHtml(djName)}</div>`);
+    } else {
+        setAiResult(`<div class="text-orange-600">${escapeHtml(data.message || 'Aucun Prestataire disponible')}</div>`);
+    }
+}
+
+async function aiDetectConflicts() {
+    const date = document.getElementById('date_debut').value;
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = document.getElementById('heure_fin').value;
+    const djId = document.getElementById('dj_id').value || null;
+    if (!date || !heureDebut || !heureFin) {
+        setAiResult('<div class="text-orange-600">Renseignez date et horaires pour la détection.</div>');
+        return;
+    }
+    setAiResult('<div class="text-blue-600">Analyse des conflits en cours...</div>');
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const response = await fetch('/api/ai/detect-conflicts', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            date,
+            heure_debut: heureDebut,
+            heure_fin: heureFin,
+            materiel_ids: getSelectedMaterielIds(),
+            dj_id: djId ? parseInt(djId, 10) : null,
+            exclude_prestation_id: EXCLUDE_PRESTATION_ID
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.has_conflicts) {
+        const messages = data.conflicts.map(c => c.message || 'Conflit détecté');
+        setAiResult(renderList('Conflits détectés', messages));
+    } else if (data.success) {
+        setAiResult('<div class="text-green-700">Aucun conflit détecté.</div>');
+    } else {
+        setAiResult('<div class="text-red-600">Erreur lors de la détection.</div>');
+    }
+}
+
+async function aiRecommendEquipment() {
+    const typeEvenement = document.getElementById('ai_type_evenement').value || '';
+    const nombreInvites = parseInt(document.getElementById('ai_nombre_invites').value || '100', 10);
+    const dureeHeures = getDurationHours();
+    setAiResult('<div class="text-blue-600">Calcul des recommandations matériel...</div>');
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const response = await fetch('/api/ai/recommend-equipment', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            type_evenement: typeEvenement,
+            nombre_invites: nombreInvites,
+            duree_heures: dureeHeures
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.recommendations || []).map(item => `${item.nom} (${item.priorite})`);
+        const html = renderList('Équipement recommandé', items) || '<div class="text-orange-600">Aucune recommandation.</div>';
+        setAiResult(html);
+    } else {
+        setAiResult('<div class="text-red-600">Erreur lors des recommandations.</div>');
+    }
+}
+
+let lastMaterielData = null;
+let materielFetchTimeout = null;
+
+function getMaterielFormState() {
+    const dateDebut = document.getElementById('date_debut').value;
+    const dateFin = document.getElementById('date_fin').value;
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = document.getElementById('heure_fin').value;
+    const lieu = document.getElementById('lieu').value || '';
+
+    if (!dateDebut || !dateFin || !heureDebut || !heureFin) {
+        return null;
+    }
+
+    const payload = {
+        date_debut: dateDebut,
+        date_fin: dateFin,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        lieu
+    };
+
+    if (EXCLUDE_PRESTATION_ID) {
+        payload.exclude_prestation_id = EXCLUDE_PRESTATION_ID;
+    }
+    const selectedIds = new Set([
+        ...Array.from(INITIAL_SELECTED_MATERIEL_IDS || []),
+        ...getSelectedMaterielIds()
+    ]);
+    if (selectedIds.size) {
+        payload.include_materiel_ids = Array.from(selectedIds);
+    }
+
+    return payload;
+}
+
+function renderMaterielItem(item, selectedIds, selectedQuantities) {
+    const distanceBadge = item.distance_km != null
+        ? `<span class="badge info ml-2">${escapeHtml(item.distance_km)} km</span>`
+        : '';
+    const categorie = item.categorie ? escapeHtml(item.categorie) : 'Non catégorisé';
+    const local = item.local ? escapeHtml(item.local) : 'Local non défini';
+    const quantite = (item.quantite_disponible != null && item.quantite_totale != null)
+        ? `<div class="text-xs text-gray-500">Disponibles: ${escapeHtml(item.quantite_disponible)}/${escapeHtml(item.quantite_totale)}</div>`
+        : '';
+    const isUnavailable = item.disponible === false;
+    const unavailableBadge = isUnavailable ? `<span class="badge danger ml-2">Indispo</span>` : '';
+    const checked = selectedIds.has(item.id) ? 'checked' : '';
+    const disabled = (isUnavailable && !selectedIds.has(item.id)) ? 'disabled' : '';
+    const maxValue = item.quantite_disponible != null ? item.quantite_disponible : (item.quantite_totale != null ? item.quantite_totale : '');
+    const savedQty = selectedQuantities[item.id] || selectedQuantities[String(item.id)] || 1;
+    const qtyValue = normalizeQuantity(savedQty, parseInt(maxValue || '0', 10));
+    const qtyDisabled = selectedIds.has(item.id) ? '' : 'disabled';
+
+    return `
+        <div class="checkbox-item">
+            <input type="checkbox"
+                   id="materiel_${item.id}"
+                   name="materiels"
+                   value="${escapeHtml(item.id)}"
+                   data-materiel-id="${escapeHtml(item.id)}"
+                   ${checked}
+                   ${disabled}>
+            <label for="materiel_${item.id}" class="flex-1">
+                <div class="font-medium">${escapeHtml(item.nom)}</div>
+                <div class="text-sm text-gray-600">
+                    ${categorie} - ${local}
+                    ${distanceBadge}
+                    ${unavailableBadge}
+                </div>
+                ${quantite}
+            </label>
+            <div class="flex flex-col items-end">
+                <span class="text-xs text-gray-500 mb-1">Qté</span>
+                <input type="number"
+                       class="form-control materiel-qty-input"
+                       style="width: 80px; text-align: center;"
+                       id="quantite_${item.id}"
+                       name="quantite_${item.id}"
+                       min="1"
+                       ${maxValue !== '' ? `max="${escapeHtml(maxValue)}"` : ''}
+                       data-max="${escapeHtml(maxValue)}"
+                       value="${escapeHtml(qtyValue)}"
+                       ${qtyDisabled}>
+            </div>
+        </div>
+    `;
+}
+
+function updateMaterielUI(data) {
+    const infoEl = document.getElementById('materiel-info');
+    const distanceInfoEl = document.getElementById('materiel-distance-info');
+    const recommendedEl = document.getElementById('materiel-recommended');
+    const manualWrapper = document.getElementById('materiel-manual-wrapper');
+    const manualEl = document.getElementById('materiel-manual');
+    const emptyEl = document.getElementById('materiel-empty');
+
+    if (!data || !data.success) {
+        infoEl.textContent = data && data.message ? data.message : 'Renseignez les dates et horaires.';
+        recommendedEl.classList.add('hidden');
+        manualWrapper.classList.add('hidden');
+        emptyEl.classList.add('hidden');
+        distanceInfoEl.classList.add('hidden');
+        return;
+    }
+
+    const recommended = data.recommended || [];
+    const available = data.available || [];
+    const selectedIds = getSelectedIdsForRender();
+    const selectedQuantities = getSelectedQuantitiesForRender();
+    const wasManualOpen = manualWrapper && !manualWrapper.classList.contains('hidden');
+
+    lastMaterielData = data;
+
+    if (!available.length) {
+        infoEl.textContent = '';
+        recommendedEl.classList.add('hidden');
+        manualWrapper.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        distanceInfoEl.classList.add('hidden');
+        hasRenderedMateriel = true;
+        return;
+    }
+
+    infoEl.textContent = '';
+    emptyEl.classList.add('hidden');
+
+    if (data.sorted_by_distance && data.distance_mode) {
+        const source = data.distance_mode === 'prestation' ? 'la mission' : 'l’entreprise';
+        distanceInfoEl.textContent = `Trié par distance depuis ${source}.`;
+        distanceInfoEl.classList.remove('hidden');
+    } else {
+        distanceInfoEl.classList.add('hidden');
+    }
+
+    const recommendedIds = new Set(recommended.map(item => item.id));
+    recommendedEl.innerHTML = recommended.map(item => renderMaterielItem(item, selectedIds, selectedQuantities)).join('');
+    recommendedEl.classList.toggle('hidden', recommended.length === 0);
+
+    const manualItems = available.filter(item => !recommendedIds.has(item.id));
+    manualEl.innerHTML = manualItems.map(item => renderMaterielItem(item, selectedIds, selectedQuantities)).join('');
+
+    if (manualWrapper) {
+        if (manualItems.length === 0) {
+            manualWrapper.classList.add('hidden');
+        } else {
+            const manualHasSelected = manualItems.some(item => selectedIds.has(item.id));
+            const hasForced = available.some(item => item.force_included);
+            if (wasManualOpen || manualHasSelected || hasForced) {
+                manualWrapper.classList.remove('hidden');
+            }
+        }
+    }
+
+    hasRenderedMateriel = true;
+    bindMaterielInputs();
+}
+
+async function fetchAvailableMateriels({ silent = false } = {}) {
+    const infoEl = document.getElementById('materiel-info');
+    const formState = getMaterielFormState();
+
+    if (!formState) {
+        infoEl.textContent = 'Renseignez les dates et horaires pour afficher le matériel disponible.';
+        updateMaterielUI({ success: false, message: infoEl.textContent });
+        return;
+    }
+
+    infoEl.textContent = 'Chargement du matériel disponible...';
+
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+    try {
+        const response = await fetch('/api/materiels/available', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(formState)
+        });
+        const data = await response.json();
+        updateMaterielUI(data);
+    } catch (error) {
+        if (!silent) {
+            updateMaterielUI({ success: false, message: 'Erreur lors du chargement du matériel.' });
+        }
+        console.error('Erreur:', error);
+    }
+}
+
+function scheduleMaterielRefresh(delay = 300) {
+    if (materielFetchTimeout) {
+        clearTimeout(materielFetchTimeout);
+    }
+    materielFetchTimeout = setTimeout(() => {
+        fetchAvailableMateriels({ silent: true });
+    }, delay);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation des dates
+    const dateDebut = document.getElementById('date_debut');
+    const dateFin = document.getElementById('date_fin');
+    const heureDebut = document.getElementById('heure_debut');
+    const heureFin = document.getElementById('heure_fin');
+    const lieu = document.getElementById('lieu');
+    const refreshBtn = document.getElementById('refresh-materiel');
+    const toggleManualBtn = document.getElementById('toggle-manual-materiel');
+    const manualWrapper = document.getElementById('materiel-manual-wrapper');
+
+    dateDebut.addEventListener('change', function() {
+        if (dateFin.value && dateDebut.value > dateFin.value) {
+            dateFin.value = dateDebut.value;
+        }
+        dateFin.min = dateDebut.value;
+        scheduleMaterielRefresh();
+    });
+
+    dateFin.addEventListener('change', function() {
+        if (dateDebut.value && dateFin.value < dateDebut.value) {
+            dateDebut.value = dateFin.value;
+        }
+        dateDebut.max = dateFin.value;
+        scheduleMaterielRefresh();
+    });
+
+    heureDebut.addEventListener('change', function() {
+        scheduleMaterielRefresh();
+    });
+
+    heureFin.addEventListener('change', function() {
+        scheduleMaterielRefresh();
+    });
+
+    if (lieu) {
+        lieu.addEventListener('blur', function() {
+            scheduleMaterielRefresh(500);
+        });
+    }
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            fetchAvailableMateriels();
+        });
+    }
+
+    if (toggleManualBtn && manualWrapper) {
+        toggleManualBtn.addEventListener('click', function() {
+            manualWrapper.classList.toggle('hidden');
+            if (!lastMaterielData) {
+                fetchAvailableMateriels();
+            }
+        });
+    }
+
+    // Validation du formulaire
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const selectedMateriels = document.querySelectorAll('input[name="materiels"]:checked');
+        if (REQUIRE_MATERIEL_SELECTION && selectedMateriels.length === 0) {
+            e.preventDefault();
+            alert('Veuillez sélectionner au moins un équipement pour cette mission.');
+            return;
+        }
+        let invalidQty = false;
+        selectedMateriels.forEach(cb => {
+            const qtyInput = document.getElementById(`quantite_${cb.value}`);
+            if (!qtyInput) {
+                return;
+            }
+            const maxValue = parseInt(qtyInput.dataset.max || '0', 10);
+            const qty = normalizeQuantity(qtyInput.value, maxValue);
+            qtyInput.value = qty;
+            if (!qty || qty < 1) {
+                invalidQty = true;
+            }
+        });
+        if (invalidQty) {
+            e.preventDefault();
+            alert('Veuillez renseigner une quantité valide pour chaque équipement sélectionné.');
+        }
+    });
+
+    // Vérification initiale si les champs sont déjà remplis
+    if (dateDebut.value && dateFin.value && heureDebut.value && heureFin.value) {
+        fetchAvailableMateriels({ silent: true });
+    }
+});
+</script>
+{% endblock %}

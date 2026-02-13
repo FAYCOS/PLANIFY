@@ -19,6 +19,11 @@ yarn-debug.log*
 pnpm-debug.log*
 planify*.log
 *.pid
+.app_pid
+.start_pid
+
+# Generated documents / exports
+*.pdf
 
 # OS
 .DS_Store
@@ -36,14 +41,15 @@ venv/
 backups/
 exports/
 instance/
+static/uploads/
+__pycache__/
+.pytest_cache/
+
+# Keys / certs
+*.pem
+*.key
 certs/
 init_key.json
-
-# Generated documents / exports
-*.pdf
-
-# Uploads / user content
-static/uploads/
 
 # Local SSH keys (do not commit)
 .ssh_planify_codex

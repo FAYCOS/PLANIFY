@@ -1,0 +1,651 @@
+{% extends "base.html" %}
+
+{% block title %}Détail Réservation - {{ reservation.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-calendar-check"></i> Réservation {{ reservation.numero }}</h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('reservations') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Informations client -->
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-user"></i> Informations Client</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-4"><strong>Nom :</strong></div>
+                                <div class="col-sm-8">{{ reservation.nom }}</div>
+                                
+                                <div class="col-sm-4"><strong>Email :</strong></div>
+                                <div class="col-sm-8">{{ reservation.email }}</div>
+                                
+                                <div class="col-sm-4"><strong>Téléphone :</strong></div>
+                                <div class="col-sm-8">{{ reservation.telephone }}</div>
+                                
+                                <div class="col-sm-4"><strong>Adresse :</strong></div>
+                                <div class="col-sm-8">{{ reservation.adresse }}</div>
+                                
+                                {% if reservation.nb_invites %}
+                                <div class="col-sm-4"><strong>Invites :</strong></div>
+                                <div class="col-sm-8">{{ reservation.nb_invites }} personnes</div>
+                                {% endif %}
+                                
+                                {% if reservation.type_lieu %}
+                                <div class="col-sm-4"><strong>Type de lieu :</strong></div>
+                                <div class="col-sm-8">{{ reservation.type_lieu.title() }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails prestation -->
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-music"></i> Détails Mission</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-4"><strong>Type :</strong></div>
+                                <div class="col-sm-8">
+                                    <span class="badge bg-info">{{ reservation.type_prestation.title() }}</span>
+                                </div>
+                                
+                                <div class="col-sm-4"><strong>Date :</strong></div>
+                                <div class="col-sm-8">{{ reservation.date_souhaitee.strftime('%d/%m/%Y') }}</div>
+                                
+                                <div class="col-sm-4"><strong>Heure :</strong></div>
+                                <div class="col-sm-8">{{ reservation.heure_souhaitee.strftime('%H:%M') }}</div>
+                                
+                                <div class="col-sm-4"><strong>Durée :</strong></div>
+                                <div class="col-sm-8">{{ reservation.duree_heures }} heures</div>
+                                
+                                <div class="col-sm-4"><strong>Prix :</strong></div>
+                                <div class="col-sm-8">
+                                    <strong class="text-success">{{ reservation.prix_prestation }}€</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demandes spéciales -->
+            {% if reservation.demandes_speciales %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-comment"></i> Demandes Spéciales</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ reservation.demandes_speciales }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Statut et validation -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-check-circle"></i> Statut et Validation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Statut actuel</h6>
+                            {% if reservation.statut == 'en_attente' %}
+                                <span class="badge bg-warning fs-6">En attente</span>
+                            {% elif reservation.statut == 'en_attente_dj' %}
+                                <span class="badge bg-info fs-6">En attente Prestataire</span>
+                            {% elif reservation.statut == 'validee' %}
+                                <span class="badge bg-success fs-6">Validée</span>
+                            {% elif reservation.statut == 'confirmee' %}
+                                <span class="badge bg-primary fs-6">Confirmée</span>
+                            {% elif reservation.statut == 'rejetee' %}
+                                <span class="badge bg-danger fs-6">Rejetée</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Validation</h6>
+                            <div class="d-flex gap-3">
+                                <div>
+                                    {% if reservation.validee_par_manager %}
+                                        <i class="fas fa-check-circle text-success"></i> Manager
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger"></i> Manager
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if reservation.validee_par_dj %}
+                                        <i class="fas fa-check-circle text-success"></i> Prestataire
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger"></i> Prestataire
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Prestataire Assigné</h6>
+                            {% if reservation.dj %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-headphones"></i> {{ reservation.dj.nom }}
+                                    </span>
+                                    {% if reservation.statut == 'en_attente' and not reservation.validee_par_manager %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            onclick="document.getElementById('dj-select').focus()">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">
+                                    <i class="fas fa-times-circle text-danger"></i> Aucun Prestataire assigné
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vérification disponibilité matériel -->
+            {% if reservation.statut == 'en_attente' and not reservation.validee_par_manager %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-microphone"></i> Assignation de l'équipement</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Période de la réservation :</strong> 
+                        {{ reservation.date_souhaitee.strftime('%d/%m/%Y') }} 
+                        de {{ reservation.heure_souhaitee.strftime('%H:%M') }} 
+                        à {{ (reservation.heure_souhaitee.hour + reservation.duree_heures)|string }}h00
+                        ({{ reservation.duree_heures }}h)
+                    </div>
+                    
+                    <!-- Bouton pour vérifier disponibilité -->
+                    <div class="text-center mb-3">
+                        <button type="button" class="btn btn-info btn-lg" id="btnCheckDisponibilite" onclick="checkMaterielDisponibilite()">
+                            <i class="fas fa-search"></i> Vérifier la disponibilité de l'équipement
+                        </button>
+                        <div class="spinner-border text-primary mt-2" role="status" id="loadingSpinner" style="display: none;">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Zone d'affichage des résultats -->
+                    <div id="materielResultats" style="display: none;">
+                        <hr>
+                        <h6 class="mb-3">
+                            <span id="statsDisponibilite"></span>
+                        </h6>
+                        
+                        <!-- Formulaire d'assignation -->
+                        <form method="POST" action="{{ url_for('assigner_materiel_reservation', reservation_id=reservation.id) }}" id="formAssignation">
+                            <div id="listeMateriel"></div>
+                            
+                            <div class="text-end mt-3">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-check"></i> Assigner l'équipement sélectionné
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions selon le statut -->
+            {% if reservation.statut == 'en_attente' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs"></i> Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Validation Manager -->
+                        {% if not reservation.validee_par_manager %}
+                        <div class="col-md-12">
+                            <h6>Validation Manager</h6>
+                            <form method="POST" action="{{ url_for('valider_reservation', reservation_id=reservation.id) }}">
+                                <div class="row">
+                                    <!-- Sélection DJ -->
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Prestataire assigné <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="dj_id" id="dj-select" required>
+                                            <option value="">Sélectionner un Prestataire</option>
+                                            {% for dj in djs %}
+                                            <option value="{{ dj.id }}" {% if reservation.dj_id == dj.id %}selected{% endif %}>
+                                                {{ dj.nom }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <small class="form-text text-muted">
+                                            {% if reservation.dj_id %}
+                                                <i class="fas fa-info-circle"></i> Vous pouvez changer le Prestataire avant de valider
+                                            {% else %}
+                                                <i class="fas fa-info-circle"></i> Le Prestataire recevra une notification pour valider la mission
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Prix -->
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Prix de la mission (€) <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" name="prix_prestation" 
+                                               step="0.01" min="0" required placeholder="0.00"
+                                               value="{{ reservation.prix_prestation if reservation.prix_prestation else '' }}"
+                                               onchange="updateRepartition(this.value)">
+                                        <small class="form-text text-muted">
+                                            Répartition automatique: Prestataire (55%), Équipement (35%), Déplacement (10%)
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3" id="repartition-preview" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <h6>Répartition du budget:</h6>
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <strong>Prestataire:</strong> <span id="dj-amount">0€</span> (55%)
+                                            </div>
+                                            <div class="col-4">
+                                                <strong>Équipement:</strong> <span id="materiel-amount">0€</span> (35%)
+                                            </div>
+                                            <div class="col-4">
+                                                <strong>Déplacement:</strong> <span id="deplacement-amount">0€</span> (10%)
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Équipement à assigner</label>
+                                    <div class="row">
+                                        {% for materiel in materiels %}
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="materiels" value="{{ materiel.id }}" 
+                                                       id="materiel_val_{{ materiel.id }}">
+                                                <label class="form-check-label" for="materiel_val_{{ materiel.id }}">
+                                                    {{ materiel.nom }} ({{ materiel.statut }})
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Notes (optionnel)</label>
+                                    <textarea class="form-control" name="notes" rows="3" placeholder="Notes pour la validation..."></textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-check"></i> Valider et envoyer au Prestataire
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Validation DJ -->
+            {% if reservation.dj_id and not reservation.validee_par_dj and reservation.validee_par_manager %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-music"></i> Validation Prestataire</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('valider_reservation_dj', reservation_id=reservation.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Notes Prestataire (optionnel)</label>
+                            <textarea class="form-control" name="notes" rows="3" placeholder="Notes du Prestataire..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Valider (Prestataire)
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Confirmation finale -->
+            {% if reservation.peut_etre_confirmee %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-rocket"></i> Confirmation Finale</h5>
+                </div>
+                <div class="card-body">
+                    <p>La réservation est validée par le manager et le Prestataire. Vous pouvez maintenant la confirmer pour créer automatiquement la mission et le devis.</p>
+                    <form method="POST" action="{{ url_for('confirmer_reservation', reservation_id=reservation.id) }}" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir confirmer cette réservation ? Cela créera automatiquement la prestation et le devis.')">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-rocket"></i> Confirmer et Créer Mission + Devis
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Informations de suivi -->
+            {% if reservation.prestation_id or reservation.devis_id %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-link"></i> Éléments Créés</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if reservation.prestation_id %}
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar-check text-success"></i> Mission</h6>
+                            <p>Mission créée et visible dans le menu "Missions"</p>
+                            <a href="{{ url_for('prestations') }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-eye"></i> Voir dans Missions
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if reservation.devis_id %}
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-file-invoice text-primary"></i> Devis</h6>
+                            <p>Devis créé et envoyé au client</p>
+                            <a href="{{ url_for('facturation') }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Voir dans Devis
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Historique -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Historique</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6>Réservation créée</h6>
+                                <p class="text-muted">{{ reservation.date_creation.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if reservation.date_validation %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6>Validée par le manager</h6>
+                                <p class="text-muted">{{ reservation.date_validation.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                {% if reservation.manager_notes %}
+                                <p><em>{{ reservation.manager_notes }}</em></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if reservation.validee_par_dj %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6>Validée par le Prestataire</h6>
+                                <p class="text-muted">Prestataire : {{ reservation.dj.nom if reservation.dj else 'Non assigné' }}</p>
+                                {% if reservation.dj_notes %}
+                                <p><em>{{ reservation.dj_notes }}</em></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if reservation.date_confirmation %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6>Confirmée</h6>
+                                <p class="text-muted">{{ reservation.date_confirmation.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                <p>Mission et devis créés automatiquement</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #007bff;
+}
+</style>
+
+<script>
+function updateRepartition(prix) {
+    const prixNum = parseFloat(prix) || 0;
+    
+    if (prixNum > 0) {
+        const djAmount = (prixNum * 0.55).toFixed(2);
+        const materielAmount = (prixNum * 0.35).toFixed(2);
+        const deplacementAmount = (prixNum * 0.10).toFixed(2);
+        
+        document.getElementById('dj-amount').textContent = djAmount + '€';
+        document.getElementById('materiel-amount').textContent = materielAmount + '€';
+        document.getElementById('deplacement-amount').textContent = deplacementAmount + '€';
+        
+        document.getElementById('repartition-preview').style.display = 'block';
+    } else {
+        document.getElementById('repartition-preview').style.display = 'none';
+    }
+}
+
+/**
+ * Afficher/masquer le champ de quantité selon l'état de la checkbox
+ */
+function toggleQuantiteInput(materielId) {
+    const checkbox = document.getElementById(`materiel_${materielId}`);
+    const quantiteInput = document.getElementById(`quantite_${materielId}`);
+    const qteLabel = document.getElementById(`qte_label_${materielId}`);
+    
+    if (checkbox && quantiteInput && qteLabel) {
+        if (checkbox.checked) {
+            // Afficher et activer le champ de quantité
+            quantiteInput.style.display = 'block';
+            quantiteInput.disabled = false;
+            qteLabel.style.display = 'block';
+        } else {
+            // Masquer et désactiver le champ de quantité
+            quantiteInput.style.display = 'none';
+            quantiteInput.disabled = true;
+            qteLabel.style.display = 'none';
+            quantiteInput.value = 1; // Reset à 1
+        }
+    }
+}
+
+/**
+ * Vérifier la disponibilité de tous les matériels pour cette réservation
+ * Utilise l'API qui gère les chevauchements horaires
+ */
+async function checkMaterielDisponibilite() {
+    const reservationId = {{ reservation.id }};
+    const btn = document.getElementById('btnCheckDisponibilite');
+    const spinner = document.getElementById('loadingSpinner');
+    const resultatsDiv = document.getElementById('materielResultats');
+    const listeDiv = document.getElementById('listeMateriel');
+    const statsSpan = document.getElementById('statsDisponibilite');
+    
+    // Afficher le spinner, cacher le bouton
+    btn.style.display = 'none';
+    spinner.style.display = 'inline-block';
+    
+    try {
+        const response = await fetch(`/api/check-materiel-disponibilite/${reservationId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert('Erreur lors de la vérification : ' + (data.error || 'Erreur inconnue'));
+            return;
+        }
+        
+        // Afficher les stats
+        const total = data.total_materiels;
+        const dispos = data.total_disponibles;
+        const indispos = total - dispos;
+        
+        statsSpan.innerHTML = `
+            <i class="fas fa-chart-bar"></i> Résultats : 
+            <span class="badge bg-success">${dispos} disponible(s)</span>
+            <span class="badge bg-danger">${indispos} indisponible(s)</span>
+            sur ${total} matériel(s) total
+        `;
+        
+        // Regrouper par catégorie
+        const parCategorie = {};
+        data.materiels.forEach(m => {
+            if (!parCategorie[m.categorie]) {
+                parCategorie[m.categorie] = [];
+            }
+            parCategorie[m.categorie].push(m);
+        });
+        
+        // Générer le HTML
+        let html = '';
+        for (const [categorie, materiels] of Object.entries(parCategorie)) {
+            html += `
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2"><i class="fas fa-folder"></i> ${categorie}</h6>
+                    <div class="row">
+            `;
+            
+            materiels.forEach(m => {
+                const disponible = m.disponible;
+                const badgeClass = disponible ? 'bg-success' : 'bg-danger';
+                const iconClass = disponible ? 'fa-check-circle' : 'fa-times-circle';
+                const textClass = disponible ? 'text-success' : 'text-muted';
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card ${disponible ? '' : 'bg-light'}">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start">
+                                    <div class="form-check flex-grow-1">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="materiel_ids" value="${m.id}" 
+                                               id="materiel_${m.id}"
+                                               ${disponible ? '' : 'disabled'}
+                                               onchange="toggleQuantiteInput(${m.id})">
+                                        <label class="form-check-label ${textClass}" for="materiel_${m.id}">
+                                            <strong>${m.nom}</strong>
+                                            <span class="badge ${badgeClass} ms-2">
+                                                <i class="fas ${iconClass}"></i>
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">
+                                                ${m.local} • 
+                                                ${m.quantite_disponible}/${m.quantite_totale} dispo
+                                            </small>
+                                `;
+                
+                // Afficher la raison d'indisponibilité
+                if (!disponible && m.raison_indisponibilite) {
+                    html += `<br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> ${m.raison_indisponibilite}</small>`;
+                }
+                
+                // Afficher les conflits détaillés
+                if (m.conflits && m.conflits.length > 0) {
+                    html += `<br><small class="text-warning">`;
+                    html += `<strong>Conflits :</strong> `;
+                    m.conflits.forEach((c, idx) => {
+                        if (idx > 0) html += ', ';
+                        html += `${c.nom} (${c.date} ${c.heure}, ${c.quantite}x)`;
+                    });
+                    html += `</small>`;
+                }
+                
+                html += `
+                                        </label>
+                                    </div>
+                                    <div class="ms-2" style="width: 90px;">
+                                        <input type="number" 
+                                               class="form-control form-control-sm quantite-input" 
+                                               name="quantite_${m.id}"
+                                               id="quantite_${m.id}"
+                                               min="1" 
+                                               max="${m.quantite_disponible}" 
+                                               value="1"
+                                               disabled
+                                               style="display: none;"
+                                               title="Max: ${m.quantite_disponible}"
+                                               placeholder="Qté">
+                                        <small class="text-muted d-block text-center mt-1" id="qte_label_${m.id}" style="display: none;">
+                                            <strong>Max: ${m.quantite_disponible}</strong>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Afficher les résultats
+        listeDiv.innerHTML = html;
+        resultatsDiv.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la vérification de disponibilité');
+    } finally {
+        // Masquer le spinner, réafficher le bouton
+        spinner.style.display = 'none';
+        btn.style.display = 'inline-block';
+    }
+}
+</script>
+{% endblock %}

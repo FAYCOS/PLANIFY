@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Planify{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Actions -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-4">
+            <button class="btn btn-primary" onclick="markAllAsRead()">
+                <i class="fas fa-check-double"></i>
+                Tout marquer comme lu
+            </button>
+            <button class="btn btn-secondary" onclick="refreshNotifications()">
+                <i class="fas fa-sync"></i>
+                Actualiser
+            </button>
+        </div>
+        <div class="text-sm text-gray-600">
+            {{ notifications|length }} notification(s)
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="space-y-4">
+        {% for notification in notifications %}
+        <div class="card notification-item" data-type="{{ notification.type }}">
+            <div class="card-body">
+                <div class="flex items-start gap-4">
+                    <div class="notification-icon">
+                        {% if notification.type == 'error' %}
+                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                        {% elif notification.type == 'warning' %}
+                        <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                        {% elif notification.type == 'info' %}
+                        <i class="fas fa-info-circle text-blue-500"></i>
+                        {% else %}
+                        <i class="fas fa-bell text-gray-500"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">{{ notification.title|apply_terminology }}</h4>
+                        <p class="text-gray-600 mt-1">{{ notification.message|apply_terminology }}</p>
+                        <div class="flex items-center gap-4 mt-2">
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-clock"></i>
+                                {{ notification.date }}
+                            </span>
+                            <span class="text-xs px-2 py-1 rounded-full 
+                                {% if notification.type == 'error' %}bg-red-100 text-red-800
+                                {% elif notification.type == 'warning' %}bg-yellow-100 text-yellow-800
+                                {% elif notification.type == 'info' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ notification.type|title }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-secondary" onclick="markAsRead(this)">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNotification(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not notifications %}
+    <div class="text-center py-12">
+        <i class="fas fa-bell-slash text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-600 mb-2">Aucune notification</h3>
+        <p class="text-gray-500">Vous êtes à jour !</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function markAsRead(element) {
+    const notification = element.closest('.notification-item');
+    notification.style.opacity = '0.5';
+    notification.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        notification.remove();
+    }, 300);
+}
+
+function deleteNotification(element) {
+    if (confirm('Supprimer cette notification ?')) {
+        const notification = element.closest('.notification-item');
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
+}
+
+function markAllAsRead() {
+    const notifications = document.querySelectorAll('.notification-item');
+    notifications.forEach((notification, index) => {
+        setTimeout(() => {
+            notification.style.opacity = '0.5';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, index * 100);
+    });
+}
+
+function refreshNotifications() {
+    location.reload();
+}
+
+// Auto-refresh des notifications
+setInterval(() => {
+    fetch('/api/notifications')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                showNotificationBadge(data.length);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du rafraîchissement des notifications:', error);
+        });
+}, 30000);
+
+function showNotificationBadge(count) {
+    // Ajouter un badge de notification dans le header
+    const existingBadge = document.querySelector('.notification-badge');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    if (count > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'notification-badge';
+        badge.textContent = count;
+        badge.style.cssText = `
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        `;
+        
+        const bellIcon = document.querySelector('[href*="notifications"]');
+        if (bellIcon) {
+            bellIcon.style.position = 'relative';
+            bellIcon.appendChild(badge);
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,719 @@
+{% extends "base.html" %}
+
+{% block title %}Rapports Avancés - Planify{% endblock %}
+
+{% block page_title %}Rapports Avancés{% endblock %}
+
+{% block content %}
+<div class="rapports-container">
+    <!-- Filtres de période -->
+    <div class="filters-section">
+        <div class="filter-card">
+            <h3><i class="fas fa-filter"></i> Filtres de période</h3>
+            <form method="GET" class="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_date">Date de début</label>
+                        <input type="date" id="start_date" name="start_date" 
+                               value="{{ start_date or (now - timedelta(days=30)).strftime('%Y-%m-%d') }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">Date de fin</label>
+                        <input type="date" id="end_date" name="end_date" 
+                               value="{{ end_date or now.strftime('%Y-%m-%d') }}">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Boutons d'export -->
+    <div class="export-section">
+        <div class="export-card">
+            <h3><i class="fas fa-download"></i> Exports Excel</h3>
+            <div class="export-buttons">
+                <a href="{{ url_for('export_prestations') }}" class="export-btn">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Missions</span>
+                </a>
+                <a href="{{ url_for('export_materiels') }}" class="export-btn">
+                    <i class="fas fa-cogs"></i>
+                    <span>Équipement</span>
+                </a>
+                <a href="{{ url_for('export_djs') }}" class="export-btn">
+                    <i class="fas fa-user"></i>
+                    <span>Prestataires</span>
+                </a>
+                <a href="{{ url_for('export_devis') }}" class="export-btn">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Devis</span>
+                </a>
+                <a href="{{ url_for('export_rapport_complet') }}?start_date={{ start_date or (now - timedelta(days=30)).strftime('%Y-%m-%d') }}&end_date={{ end_date or now.strftime('%Y-%m-%d') }}" 
+                   class="export-btn export-btn-primary">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Rapport Complet</span>
+                </a>
+                <!-- Bouton export clients désactivé temporairement -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.prestations_periode }}</h3>
+                    <p>Missions sur la période</p>
+                    <div class="stat-evolution">
+                        {% if stats.pourcentage_prestations > 0 %}
+                            <span class="evolution positive">
+                                <i class="fas fa-arrow-up"></i> +{{ stats.pourcentage_prestations }}%
+                            </span>
+                        {% elif stats.pourcentage_prestations < 0 %}
+                            <span class="evolution negative">
+                                <i class="fas fa-arrow-down"></i> {{ stats.pourcentage_prestations }}%
+                            </span>
+                        {% else %}
+                            <span class="evolution neutral">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                        {% endif %}
+                        <small>vs période précédente</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-euro-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ "{:,.0f}".format(stats.revenus_estimes) }}€</h3>
+                    <p>Revenus estimés</p>
+                    <div class="stat-evolution">
+                        {% if stats.pourcentage_revenus > 0 %}
+                            <span class="evolution positive">
+                                <i class="fas fa-arrow-up"></i> +{{ stats.pourcentage_revenus }}%
+                            </span>
+                        {% elif stats.pourcentage_revenus < 0 %}
+                            <span class="evolution negative">
+                                <i class="fas fa-arrow-down"></i> {{ stats.pourcentage_revenus }}%
+                            </span>
+                        {% else %}
+                            <span class="evolution neutral">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                        {% endif %}
+                        <small>vs période précédente</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.materiel_utilise }}</h3>
+                    <p>Équipement utilisé</p>
+                    <div class="stat-evolution">
+                        {% if stats.pourcentage_materiel > 0 %}
+                            <span class="evolution positive">
+                                <i class="fas fa-arrow-up"></i> +{{ stats.pourcentage_materiel }}%
+                            </span>
+                        {% elif stats.pourcentage_materiel < 0 %}
+                            <span class="evolution negative">
+                                <i class="fas fa-arrow-down"></i> {{ stats.pourcentage_materiel }}%
+                            </span>
+                        {% else %}
+                            <span class="evolution neutral">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                        {% endif %}
+                        <small>vs période précédente</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ stats.djs_actifs }}</h3>
+                    <p>Prestataires actifs</p>
+                    <div class="stat-evolution">
+                        {% if stats.pourcentage_djs > 0 %}
+                            <span class="evolution positive">
+                                <i class="fas fa-arrow-up"></i> +{{ stats.pourcentage_djs }}%
+                            </span>
+                        {% elif stats.pourcentage_djs < 0 %}
+                            <span class="evolution negative">
+                                <i class="fas fa-arrow-down"></i> {{ stats.pourcentage_djs }}%
+                            </span>
+                        {% else %}
+                            <span class="evolution neutral">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                        {% endif %}
+                        <small>vs période précédente</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="charts-section">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Évolution des missions</h3>
+            </div>
+            <canvas id="prestationsChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Répartition par type</h3>
+            </div>
+            <canvas id="repartitionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Tableau de données -->
+    <div class="data-section">
+        <div class="data-card">
+            <div class="data-header">
+                <h3>Données détaillées</h3>
+                <div class="data-controls">
+                    <button class="btn btn-secondary" onclick="toggleDataView()">
+                        <i class="fas fa-eye"></i> Basculer vue
+                    </button>
+                </div>
+            </div>
+            <div class="data-content" id="dataContent">
+                <!-- Contenu chargé via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Données des graphiques
+const chartData = {
+    prestations: {
+        labels: {{ prestations_labels | tojson }},
+        data: {{ prestations_data | tojson }}
+    },
+    repartition: {
+        labels: {{ repartition_labels | tojson }},
+        data: {{ repartition_data | tojson }}
+    }
+};
+
+// Initialisation des graphiques
+document.addEventListener('DOMContentLoaded', function() {
+    initCharts();
+    loadData();
+});
+
+function initCharts() {
+    // Graphique des prestations avec tendance
+    const prestationsCtx = document.getElementById('prestationsChart').getContext('2d');
+    new Chart(prestationsCtx, {
+        type: 'line',
+        data: {
+            labels: chartData.prestations.labels,
+            datasets: [{
+                label: 'Missions',
+                data: chartData.prestations.data,
+                borderColor: '#0071e3',
+                backgroundColor: 'rgba(0, 113, 227, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#0071e3',
+                pointBorderColor: '#0071e3',
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: '#667eea',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+
+    // Graphique de répartition amélioré
+    const repartitionCtx = document.getElementById('repartitionChart').getContext('2d');
+    new Chart(repartitionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: chartData.repartition.labels,
+            datasets: [{
+                data: chartData.repartition.data,
+                backgroundColor: [
+                    '#667eea',
+                    '#f093fb',
+                    '#4facfe',
+                    '#43e97b',
+                    '#ff6b6b',
+                    '#4ecdc4'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+}
+
+function loadData() {
+    // Chargement des vraies données depuis le serveur
+    const dataContent = document.getElementById('dataContent');
+    dataContent.innerHTML = `
+        <div class="data-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Chargement des données...</span>
+        </div>
+    `;
+    
+    // Récupérer les données réelles via AJAX
+    fetch('/api/rapports-data?start_date={{ start_date }}&end_date={{ end_date }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.prestations && data.prestations.length > 0) {
+                let tableHTML = `
+                    <div class="data-table">
+                        <table class="table scan-aligned-table scan-cols-6">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Client</th>
+                                    <th>Prestataire</th>
+                                    <th>Lieu</th>
+                                    <th>Statut</th>
+                                    <th>Équipement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.prestations.forEach(prestation => {
+                    const statutClass = prestation.statut === 'confirmee' ? 'badge-success' : 
+                                       prestation.statut === 'planifiee' ? 'badge-warning' : 'badge-secondary';
+                    const materielList = prestation.materiels ? prestation.materiels.map(m => m.nom).join(', ') : 'Aucun';
+                    
+                    tableHTML += `
+                        <tr>
+                            <td>${prestation.date_debut}</td>
+                            <td>${prestation.client}</td>
+                            <td>${prestation.dj_nom || 'N/A'}</td>
+                            <td>${prestation.lieu}</td>
+                            <td><span class="badge ${statutClass}">${prestation.statut}</span></td>
+                            <td>${materielList}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                dataContent.innerHTML = tableHTML;
+            } else {
+                dataContent.innerHTML = `
+                    <div class="data-empty">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>Aucune prestation trouvée pour cette période</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des données:', error);
+            dataContent.innerHTML = `
+                <div class="data-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erreur lors du chargement des données</p>
+                </div>
+            `;
+        });
+}
+
+function toggleDataView() {
+    const dataContent = document.getElementById('dataContent');
+    const currentView = dataContent.dataset.view || 'table';
+    
+    if (currentView === 'table') {
+        dataContent.innerHTML = `
+            <div class="data-cards">
+                <div class="data-card-item">
+                    <h4>Marie & Pierre</h4>
+                    <p>15/10/2025 - Prestataire Thomas</p>
+                    <span class="badge badge-success">Confirmé</span>
+                </div>
+                <div class="data-card-item">
+                    <h4>Anniversaire Paul</h4>
+                    <p>16/10/2025 - Prestataire Sarah</p>
+                    <span class="badge badge-warning">Planifié</span>
+                </div>
+            </div>
+        `;
+        dataContent.dataset.view = 'cards';
+    } else {
+        loadData();
+        dataContent.dataset.view = 'table';
+    }
+}
+</script>
+
+<style>
+.rapports-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.filters-section,
+.export-section,
+.stats-section,
+.charts-section,
+.data-section {
+    margin-bottom: 30px;
+}
+
+.filter-card,
+.export-card,
+.stat-card,
+.chart-container,
+.data-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.filter-card h3,
+.export-card h3 {
+    margin: 0 0 20px 0;
+    color: #1f2937;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-form {
+    display: flex;
+    gap: 16px;
+    align-items: end;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    align-items: end;
+}
+
+.export-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.export-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #374151;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.export-btn:hover {
+    background: #0071e3;
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.export-btn-primary {
+    background: #0071e3;
+    color: white;
+    border-color: #667eea;
+}
+
+.export-btn-success {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+}
+
+.export-btn-success:hover {
+    background: #059669;
+    border-color: #059669;
+}
+
+.export-btn i {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.export-btn span {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #0071e3, #005bb5);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 4px 0;
+}
+
+.stat-content p {
+    color: #6b7280;
+    margin: 0;
+    font-size: 14px;
+}
+
+.stat-evolution {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.evolution {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.evolution.positive {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.evolution.negative {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.evolution.neutral {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.stat-evolution small {
+    color: #9ca3af;
+    font-size: 10px;
+}
+
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.chart-container {
+    height: 300px;
+}
+
+.chart-header h3 {
+    margin: 0 0 20px 0;
+    color: #1f2937;
+    font-size: 18px;
+}
+
+.data-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.data-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 18px;
+}
+
+.data-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: #6b7280;
+}
+
+.data-table {
+    overflow-x: auto;
+}
+
+.data-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.data-card-item {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.data-card-item h4 {
+    margin: 0 0 8px 0;
+    color: #1f2937;
+}
+
+.data-card-item p {
+    margin: 0 0 8px 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .export-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

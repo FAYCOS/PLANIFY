@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel Utilisateur - Planify{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-user-plus"></i> Nouvel Utilisateur</h1>
+        <p>Créer un nouveau compte utilisateur</p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message|apply_terminology }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>Informations de l'utilisateur</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">Nom d'utilisateur *</label>
+                        <input type="text" id="username" name="username" required 
+                               placeholder="Nom d'utilisateur unique">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required 
+                               placeholder="adresse@email.com">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nom">Nom *</label>
+                        <input type="text" id="nom" name="nom" required 
+                               placeholder="Nom de famille">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prenom">Prénom *</label>
+                        <input type="text" id="prenom" name="prenom" required 
+                               placeholder="Prénom">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="role">Rôle *</label>
+                        <select id="role" name="role" required>
+                            <option value="">Sélectionner un rôle</option>
+                            <option value="admin">Administrateur</option>
+                            <option value="manager">Manager</option>
+                            <option value="dj">Prestataire</option>
+                            <option value="technicien">Prestataire technique</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="telephone">Téléphone</label>
+                        <input type="tel" id="telephone" name="telephone" 
+                               placeholder="0123456789">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Mot de passe *</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Mot de passe sécurisé" minlength="6">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Créer l'utilisateur
+                    </button>
+                    <a href="{{ url_for('users') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>Rôles et Permissions</h2>
+        </div>
+        <div class="card-body">
+            <div class="roles-info">
+                <div class="role-item">
+                    <h3><i class="fas fa-crown"></i> Administrateur</h3>
+                    <p>Accès complet à toutes les fonctionnalités</p>
+                    <ul>
+                        <li>Gestion des utilisateurs</li>
+                        <li>Création/modification des missions</li>
+                        <li>Gestion de l'équipement</li>
+                        <li>Accès aux rapports</li>
+                    </ul>
+                </div>
+                
+                <div class="role-item">
+                    <h3><i class="fas fa-user-tie"></i> Manager</h3>
+                    <p>Gestion des missions et de l'équipement</p>
+                    <ul>
+                        <li>Création/modification des missions</li>
+                        <li>Mise en maintenance de l'équipement</li>
+                        <li>Consultation des rapports</li>
+                    </ul>
+                </div>
+                
+                <div class="role-item">
+                    <h3><i class="fas fa-music"></i> Prestataire</h3>
+                    <p>Consultation des missions et calendrier</p>
+                    <ul>
+                        <li>Consultation des missions</li>
+                        <li>Accès au calendrier personnel</li>
+                        <li>Consultation de l'équipement</li>
+                    </ul>
+                </div>
+                
+                <div class="role-item">
+                    <h3><i class="fas fa-tools"></i> Prestataire technique</h3>
+                    <p>Gestion de l'équipement et maintenance</p>
+                    <ul>
+                        <li>Mise en maintenance de l'équipement</li>
+                        <li>Consultation des missions</li>
+                        <li>Gestion des statuts équipement</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.roles-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.role-item {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.role-item h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.role-item h3 i {
+    margin-right: 8px;
+    color: #667eea;
+}
+
+.role-item p {
+    color: #666;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.role-item ul {
+    list-style: none;
+    padding: 0;
+}
+
+.role-item li {
+    padding: 5px 0;
+    color: #555;
+    position: relative;
+    padding-left: 20px;
+}
+
+.role-item li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #28a745;
+    font-weight: bold;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .roles-info {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+

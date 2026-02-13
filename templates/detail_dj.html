@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dj.nom }} - Planify{% endblock %}
+{% block page_title %}{{ dj.nom }}{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Actions -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-4">
+            <a href="{{ url_for('modifier_dj', dj_id=dj.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i>
+                Modifier
+            </a>
+            <form method="POST" action="{{ url_for('supprimer_dj', dj_id=dj.id) }}" 
+                  style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce prestataire ?')">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Supprimer
+                </button>
+            </form>
+        </div>
+        <a href="{{ url_for('djs') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Informations du prestataire -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-user"></i>
+                    Informations
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Nom</label>
+                        <p class="text-gray-900">{{ dj.nom }}</p>
+                    </div>
+                    
+                    {% if dj.contact %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Contact</label>
+                        <p class="text-gray-900">{{ dj.contact }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if dj.notes %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Notes</label>
+                        <p class="text-gray-900">{{ dj.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiques
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Total missions</span>
+                        <span class="font-semibold">{{ prestations|length }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Missions confirmées</span>
+                        <span class="font-semibold">{{ prestations|selectattr('statut', 'equalto', 'confirmee')|list|length }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Missions terminées</span>
+                        <span class="font-semibold">{{ prestations|selectattr('statut', 'equalto', 'terminee')|list|length }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Note moyenne</span>
+                        {% if rating_avg %}
+                        <span class="font-semibold">{{ '%.1f'|format(rating_avg) }}/5 ({{ rating_count }})</span>
+                        {% else %}
+                        <span class="text-sm text-gray-500">Aucune note</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-bolt"></i>
+                    Actions rapides
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    <a href="{{ url_for('nouvelle_prestation') }}?dj_id={{ dj.id }}" class="btn btn-primary w-full">
+                        <i class="fas fa-plus"></i>
+                        Nouvelle mission
+                    </a>
+                    <a href="{{ url_for('calendrier') }}" class="btn btn-secondary w-full">
+                        <i class="fas fa-calendar"></i>
+                        Voir le calendrier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique des prestations -->
+    <div class="card mt-6">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-history"></i>
+                Historique des missions
+            </h3>
+        </div>
+        <div class="card-body">
+            {% if prestations %}
+            <div style="display: grid; gap: 16px;">
+                {% for prestation in prestations %}
+                <div style="background: white; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 20px; transition: all 0.2s ease;">
+                    
+                    <!-- Icône -->
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #34C759 0%, #30D158 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-calendar-check" style="font-size: 20px; color: white;"></i>
+                    </div>
+                    
+                    <!-- Infos -->
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 16px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                            {{ prestation.client }}
+                        </div>
+                        <div style="font-size: 13px; color: #86868b;">
+                            <i class="fas fa-map-marker-alt"></i> {{ prestation.lieu }}
+                        </div>
+                    </div>
+                    
+                    <!-- Dates -->
+                    <div style="flex-shrink: 0; text-align: center;">
+                        <div style="font-size: 14px; font-weight: 600; color: #1d1d1f;">
+                            {{ prestation.date_debut.strftime('%d/%m/%Y') }}
+                        </div>
+                        <div style="font-size: 12px; color: #86868b;">
+                            → {{ prestation.date_fin.strftime('%d/%m/%Y') }}
+                        </div>
+                    </div>
+                    
+                    <!-- Statut -->
+                    <div style="flex-shrink: 0;">
+                        <span class="status-badge status-{{ prestation.statut }}" style="padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;">
+                            {{ prestation.statut|title }}
+                        </span>
+                    </div>
+                    
+                    <!-- Action -->
+                    <div style="flex-shrink: 0;">
+                        <a href="{{ url_for('detail_prestation', prestation_id=prestation.id) }}" 
+                           style="padding: 8px 16px; border-radius: 8px; background: #0071E3; color: white; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                           onmouseover="this.style.background='#0077ED'"
+                           onmouseout="this.style.background='#0071E3'">
+                            <i class="fas fa-eye"></i>
+                            Voir
+                        </a>
+                    </div>
+                    
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 80px 40px;">
+                <i class="fas fa-calendar-times" style="font-size: 48px; color: #86868b; margin-bottom: 16px;"></i>
+                <p style="color: #86868b; font-size: 15px;">Aucune mission pour ce Prestataire</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

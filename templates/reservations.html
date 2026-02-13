@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Réservations Clients{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-calendar-check"></i> Réservations Clients</h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('reservation_client') }}" class="btn btn-primary" target="_blank">
+                        <i class="fas fa-plus"></i> Nouvelle Réservation
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select class="form-control" onchange="filterReservations(this.value)">
+                                <option value="">Tous les statuts</option>
+                                <option value="en_attente">En attente</option>
+                                <option value="validee">Validée</option>
+                                <option value="confirmee">Confirmée</option>
+                                <option value="rejetee">Rejetée</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" placeholder="Rechercher..." id="searchInput">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des réservations en cards -->
+            <div class="card">
+                <div class="card-body">
+                    {% if reservations.items %}
+                        <div style="display: grid; gap: 16px;">
+                            {% for reservation in reservations.items %}
+                            <div style="background: white; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 16px; padding: 24px; display: flex; align-items: center; gap: 24px; transition: all 0.2s ease;">
+                                
+                                <!-- Icône -->
+                                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #FF9500 0%, #FFB340 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="fas fa-calendar-plus" style="font-size: 24px; color: white;"></i>
+                                </div>
+                                
+                                <!-- Infos -->
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-size: 17px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                                        {{ reservation.nom }}
+                                    </div>
+                                    <div style="font-size: 13px; color: #86868b; margin-bottom: 8px;">
+                                        N° {{ reservation.numero }} • Créé le {{ reservation.date_creation.strftime('%d/%m/%Y %H:%M') }}
+                                    </div>
+                                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                                        <span style="display: inline-block; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #0071e3; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                            {{ reservation.type_prestation.title() }} • {{ reservation.duree_heures }}h
+                                        </span>
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-envelope" style="color: #86868b; font-size: 12px;"></i>
+                                            <span style="font-size: 13px; color: #515154;">{{ reservation.email }}</span>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-phone" style="color: #86868b; font-size: 12px;"></i>
+                                            <span style="font-size: 13px; color: #515154;">{{ reservation.telephone }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Date & Prix -->
+                                <div style="flex-shrink: 0; text-align: center;">
+                                    <div style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                                        {{ reservation.date_souhaitee.strftime('%d/%m/%Y') }}
+                                    </div>
+                                    <div style="font-size: 13px; color: #86868b; margin-bottom: 8px;">
+                                        {{ reservation.heure_souhaitee.strftime('%H:%M') }}
+                                    </div>
+                                    <div style="font-size: 17px; font-weight: 600; color: #0071e3;">
+                                        {{ reservation.prix_prestation }}€
+                                    </div>
+                                </div>
+                                
+                                <!-- Statut -->
+                                <div style="flex-shrink: 0; text-align: center;">
+                                    {% if reservation.statut == 'en_attente' %}
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 149, 0, 0.12); color: #856404; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; white-space: nowrap;">
+                                            <i class="fas fa-clock"></i> En attente
+                                        </span>
+                                    {% elif reservation.statut == 'validee' %}
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(52, 199, 89, 0.12); color: #1b5e20; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; white-space: nowrap;">
+                                            <i class="fas fa-check-circle"></i> Validée
+                                        </span>
+                                    {% elif reservation.statut == 'confirmee' %}
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 113, 227, 0.12); color: #0071e3; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; white-space: nowrap;">
+                                            <i class="fas fa-check-double"></i> Confirmée
+                                        </span>
+                                    {% elif reservation.statut == 'rejetee' %}
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 59, 48, 0.12); color: #721c24; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; white-space: nowrap;">
+                                            <i class="fas fa-times-circle"></i> Rejetée
+                                        </span>
+                                    {% endif %}
+                                    {% if reservation.validee_par_manager or reservation.validee_par_dj %}
+                                    <div style="font-size: 11px; color: #34C759; margin-top: 6px;">
+                                        {% if reservation.validee_par_manager %}✓ Manager{% endif %}
+                                        {% if reservation.validee_par_dj %}✓ Prestataire{% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                                    <a href="{{ url_for('detail_reservation', reservation_id=reservation.id) }}" 
+                                       style="padding: 10px 20px; border-radius: 10px; background: #0071E3; color: white; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                                       onmouseover="this.style.background='#0077ED'"
+                                       onmouseout="this.style.background='#0071E3'">
+                                        <i class="fas fa-eye"></i>
+                                        Voir
+                                    </a>
+                                    {% if reservation.statut == 'en_attente' %}
+                                    <a href="{{ url_for('detail_reservation', reservation_id=reservation.id) }}" 
+                                       style="padding: 10px 16px; border-radius: 10px; background: #34C759; color: white; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                                       title="Valider">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if reservation.prestation_id %}
+                                    <a href="{{ url_for('prestations') }}" 
+                                       style="padding: 10px 16px; border-radius: 10px; background: #f5f5f7; color: #1d1d1f; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                                       title="Voir la mission"
+                                       onmouseover="this.style.background='#e8e8ed'"
+                                       onmouseout="this.style.background='#f5f5f7'">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if reservations.pages > 1 %}
+                        <nav aria-label="Pagination des réservations">
+                            <ul class="pagination justify-content-center">
+                                {% if reservations.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('reservations', page=reservations.prev_num) }}">Précédent</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in reservations.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != reservations.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('reservations', page=page_num) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">…</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if reservations.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('reservations', page=reservations.next_num) }}">Suivant</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h4>Aucune réservation trouvée</h4>
+                            <p class="text-muted">Les réservations clients apparaîtront ici.</p>
+                            <a href="{{ url_for('reservation_client') }}" class="btn btn-primary" target="_blank">
+                                <i class="fas fa-plus"></i> Créer une réservation
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterReservations(statut) {
+    const url = new URL(window.location);
+    if (statut) {
+        url.searchParams.set('statut', statut);
+    } else {
+        url.searchParams.delete('statut');
+    }
+    window.location.href = url.toString();
+}
+
+// Recherche en temps réel
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

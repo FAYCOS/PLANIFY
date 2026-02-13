@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planify · Precision Aurora</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #1d4ed8;
+      --accent-2: #0ea5e9;
+      --shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(29,78,216,0.12), transparent 42%),
+        radial-gradient(circle at 88% 15%, rgba(14,165,233,0.12), transparent 46%),
+        var(--bg);
+    }
+    .wrap { padding: 24px clamp(16px, 4vw, 48px) 48px; }
+    .topbar {
+      position: sticky; top: 16px; z-index: 10;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
+      padding: 14px 20px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.86);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: var(--shadow);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-badge {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+      color: white; display: grid; place-items: center; font-weight: 600;
+    }
+    .logo-text strong { display: block; font-size: 15px; }
+    .logo-text span { font-size: 12px; color: var(--muted); }
+
+    .nav { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+    .nav a { text-decoration: none; color: var(--ink); font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 999px; }
+    .nav a.active { background: var(--ink); color: #fff; }
+
+    .actions { display: flex; gap: 8px; }
+    .btn { border: none; border-radius: 12px; padding: 9px 14px; font-weight: 600; cursor: pointer; }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.ghost { background: transparent; border: 1px solid var(--line); }
+
+    .subnav { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .subnav a { text-decoration: none; font-size: 12px; color: var(--muted); padding: 6px 10px; border-radius: 999px; }
+    .subnav a.active { background: rgba(29,78,216,0.12); color: var(--accent); }
+
+    .grid { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+    .stat { background: var(--panel); border-radius: var(--radius); padding: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .stat label { font-size: 12px; color: var(--muted); }
+    .stat h2 { margin: 8px 0 0; font-size: 26px; }
+
+    .layout { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--panel); border-radius: var(--radius); border: 1px solid var(--line); padding: 18px; box-shadow: var(--shadow); }
+    .panel h4 { margin: 0 0 12px; }
+    .card-list { display: grid; gap: 10px; }
+    .card { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 12px 14px; background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; }
+    .chip { font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 4px 8px; border-radius: 999px; background: rgba(14,165,233,0.1); color: var(--accent-2); }
+
+    .activity { display: grid; gap: 12px; }
+    .activity .row { display: grid; grid-template-columns: 72px 1fr; gap: 10px; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .activity .row span { color: var(--muted); }
+
+    .fade { animation: fade 0.6s ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="logo">
+        <div class="logo-badge">P</div>
+        <div class="logo-text">
+          <strong>Planify Aurora</strong>
+          <span>Tableau de bord précis</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="active" href="#">Dashboard</a>
+        <a href="#">Opérations</a>
+        <a href="#">Matériel</a>
+        <a href="#">Finance</a>
+        <a href="#">IA</a>
+        <a href="#">Paramètres</a>
+      </nav>
+      <div class="actions">
+        <button class="btn ghost">Profil</button>
+        <button class="btn primary">Nouvelle mission</button>
+      </div>
+    </header>
+
+    <div class="subnav">
+      <a class="active" href="#">Vue globale</a>
+      <a href="#">Planning</a>
+      <a href="#">Stocks</a>
+      <a href="#">Alertes</a>
+      <a href="#">Rapports</a>
+    </div>
+
+    <section class="grid fade">
+      <div class="stat"><label>Missions actives</label><h2>08</h2></div>
+      <div class="stat"><label>Matériel mobilisé</label><h2>42</h2></div>
+      <div class="stat"><label>Retours en attente</label><h2>5</h2></div>
+      <div class="stat"><label>Encaissements</label><h2>€6,120</h2></div>
+    </section>
+
+    <section class="layout fade">
+      <div class="panel">
+        <h4>Planification du jour</h4>
+        <div class="card-list">
+          <div class="card"><div><strong>Club Polaris</strong><br><small>20:00–02:00 · DJ Nova</small></div><span class="chip">CONFIRMÉE</span></div>
+          <div class="card"><div><strong>Soirée Corporate</strong><br><small>18:00–23:00 · Tech: Lina</small></div><span class="chip">LOGISTIQUE</span></div>
+          <div class="card"><div><strong>Anniversaire Léo</strong><br><small>19:30–01:00 · DJ Eden</small></div><span class="chip">À PRÉPARER</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Activité live</h4>
+        <div class="activity">
+          <div class="row"><span>14:32</span><div>Sortie · Pack Sono A (SN 0001)</div></div>
+          <div class="row"><span>14:45</span><div>Retour · Lumière B (SN 0004)</div></div>
+          <div class="row"><span>15:01</span><div>Validation · Paiement facture #2026-0042</div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Rapports - Planify{% endblock %}
+{% block page_title %}Rapports et statistiques{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Actions d'export -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-4">
+            <a href="{{ url_for('export_prestations_csv') }}" class="btn btn-primary">
+                <i class="fas fa-download"></i>
+                Exporter missions (CSV)
+            </a>
+            <a href="{{ url_for('export_materiels') }}" class="btn btn-secondary">
+                <i class="fas fa-download"></i>
+                Exporter équipement (Excel)
+            </a>
+        </div>
+        <div class="text-sm text-gray-600">
+            Dernière mise à jour : {{ now.strftime('%d/%m/%Y %H:%M') }}
+        </div>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="stats-grid mb-8">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon primary">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.total_prestations }}</div>
+            <div class="stat-label">Missions totales</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon success">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.prestations_ce_mois }}</div>
+            <div class="stat-label">Ce mois</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.materiels_disponibles }}</div>
+            <div class="stat-label">Équipements disponibles</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.materiels_maintenance }}</div>
+            <div class="stat-label">Équipements en maintenance</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon primary">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.djs_actifs }}</div>
+            <div class="stat-label">Prestataires actifs</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Prestations par statut -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Missions par statut
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    {% for statut, count in prestations_par_statut.items() %}
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="status-badge status-{{ statut }}">
+                                {{ statut|title }}
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold">{{ count }}</div>
+                            <div class="text-sm text-gray-500">
+                                {% if stats.total_prestations > 0 %}
+                                {{ "%.1f"|format((count / stats.total_prestations) * 100) }}%
+                                {% else %}
+                                0%
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Évolution des prestations -->
+    <div class="card mt-6">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-chart-line"></i>
+                Évolution des missions
+            </h3>
+        </div>
+        <div class="card-body">
+            <div style="height:260px; position:relative;">
+                <canvas id="prestationsEvolutionChart"></canvas>
+            </div>
+            <div class="flex justify-between items-center flex-wrap gap-3 mt-4 text-sm text-gray-600">
+                <span>Exportez vos données pour analyser dans Excel ou Google Sheets.</span>
+                <div class="flex gap-3">
+                    <a href="{{ url_for('export_prestations_csv') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-file-csv"></i>
+                        Exporter CSV
+                    </a>
+                    <a href="{{ url_for('export_devis') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-file-invoice"></i>
+                        Exporter devis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const prestationsLabels = {{ prestations_labels | tojson }};
+const prestationsCounts = {{ prestations_counts | tojson }};
+const chartEl = document.getElementById('prestationsEvolutionChart');
+if (chartEl) {
+    const ctx = chartEl.getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: prestationsLabels,
+            datasets: [{
+                label: 'Missions',
+                data: prestationsCounts,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.18)',
+                tension: 0.35,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#3b82f6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    padding: 10
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+}
+
+// Mise à jour automatique des statistiques
+function updateStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            // Mise à jour des compteurs en temps réel
+            console.log('Statistiques mises à jour:', data);
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour:', error);
+        });
+}
+
+// Mise à jour toutes les 30 secondes
+setInterval(updateStats, 30000);
+
+// Mise à jour au chargement
+document.addEventListener('DOMContentLoaded', updateStats);
+</script>
+{% endblock %}

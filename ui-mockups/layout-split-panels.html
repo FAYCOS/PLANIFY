@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planify UI - Split Panels</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #F7F8FC;
+      --bg-2: #EEF2F8;
+      --ink: #0F172A;
+      --muted: #5C6878;
+      --accent: #1F6BFF;
+      --accent-2: #22D3EE;
+      --card: rgba(255,255,255,0.78);
+      --border: rgba(255,255,255,0.6);
+      --shadow: 0 16px 40px rgba(15,23,42,0.16);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter Tight', 'Sora', system-ui, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(1100px 700px at 10% -12%, rgba(31,107,255,0.16), transparent 60%),
+                  radial-gradient(900px 500px at 92% -18%, rgba(34,211,238,0.18), transparent 60%),
+                  linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      min-height: 100vh;
+    }
+    .shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 28px 60px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .title { font-family: 'Sora', sans-serif; font-size: 28px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1.3fr 1fr;
+      gap: 16px;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+    .nav { display: grid; gap: 8px; }
+    .nav a {
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.65);
+    }
+    .nav a.active {
+      background: linear-gradient(135deg, rgba(31,107,255,0.2), rgba(34,211,238,0.2));
+      border-color: rgba(31,107,255,0.4);
+    }
+    .list { display: grid; gap: 10px; margin-top: 12px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.65);
+    }
+    .kpi {
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+      margin-top: 12px;
+    }
+    .kpi span { color: var(--muted); font-size: 12px; }
+    @media (max-width: 1200px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <div class="title">Operations Center</div>
+      <div style="color: var(--muted);">Vue 2 colonnes + rail</div>
+    </div>
+
+    <div class="layout">
+      <aside class="panel">
+        <h3 style="font-family: 'Sora'; font-size: 18px; margin-bottom: 12px;">Navigation</h3>
+        <div class="nav">
+          <a class="active" href="#">Dashboard</a>
+          <a href="#">Missions</a>
+          <a href="#">Materiel</a>
+          <a href="#">Facturation</a>
+          <a href="#">IA</a>
+          <a href="#">Parametres</a>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <h3 style="font-family: 'Sora'; font-size: 20px;">Mission focus</h3>
+        <div class="kpi"><span>Prochaine mission</span><strong>Hotel Azure — 10/02</strong></div>
+        <div class="list">
+          <div class="row"><span>Equipe</span><span>DJ + Tech</span></div>
+          <div class="row"><span>Materiel</span><span>12 items</span></div>
+          <div class="row"><span>Transport</span><span>34 km</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 style="font-family: 'Sora'; font-size: 20px;">Facturation</h3>
+        <div class="list">
+          <div class="row"><span>Devis D-112</span><span>Envoye</span></div>
+          <div class="row"><span>Facture F-204</span><span>Payee</span></div>
+          <div class="row"><span>Relance F-205</span><span>J+7</span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

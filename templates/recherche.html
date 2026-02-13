@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Recherche - Planify{% endblock %}
+{% block page_title %}Recherche{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Barre de recherche principale -->
+    <div class="card mb-6">
+        <div class="card-body">
+            <form method="GET" class="max-w-2xl mx-auto">
+                <div class="search-input-wrapper">
+                    <input type="text" name="q" placeholder="Rechercher dans toutes les données..." 
+                           class="search-input" value="{{ query }}" autocomplete="off">
+                    <button type="submit" class="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if query %}
+    <!-- Résultats de recherche -->
+    <div class="space-y-6">
+        <!-- Prestations -->
+        {% if results.prestations %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    Missions ({{ results.prestations|length }})
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    {% for prestation in results.prestations %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <h4 class="font-medium">{{ prestation.client }}</h4>
+                            <p class="text-sm text-gray-600">{{ prestation.lieu }}</p>
+                            <p class="text-xs text-gray-500">{{ prestation.dj.nom }} - {{ prestation.date_debut.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="status-badge status-{{ prestation.statut }}">
+                                {{ prestation.statut|title }}
+                            </span>
+                            <a href="{{ url_for('detail_prestation', prestation_id=prestation.id) }}" 
+                               class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Matériel -->
+        {% if results.materiels %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i>
+                    Équipement ({{ results.materiels|length }})
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    {% for materiel in results.materiels %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <h4 class="font-medium">{{ materiel.nom }}</h4>
+                            <p class="text-sm text-gray-600">{{ materiel.categorie }} - {{ materiel.local.nom }}</p>
+                            <p class="text-xs text-gray-500">Quantité: {{ materiel.quantite }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="status-badge status-{{ materiel.statut }}">
+                                {{ materiel.statut|title }}
+                            </span>
+                            <a href="{{ url_for('materiels') }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- DJs -->
+        {% if results.djs %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-user"></i>
+                    Prestataires ({{ results.djs|length }})
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    {% for dj in results.djs %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <h4 class="font-medium">{{ dj.nom }}</h4>
+                            {% if dj.contact %}
+                            <p class="text-sm text-gray-600">{{ dj.contact }}</p>
+                            {% endif %}
+                            {% if dj.notes %}
+                            <p class="text-xs text-gray-500">{{ dj.notes[:100] }}{% if dj.notes|length > 100 %}...{% endif %}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ dj.prestations|length }} mission(s)
+                            </span>
+                            <a href="{{ url_for('detail_dj', dj_id=dj.id) }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Locaux -->
+        {% if results.locals %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-building"></i>
+                    Sites ({{ results.locals|length }})
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    {% for local in results.locals %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <h4 class="font-medium">{{ local.nom }}</h4>
+                            <p class="text-sm text-gray-600">{{ local.adresse }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {{ local.materiels|length }} équipement(s)
+                            </span>
+                            <a href="{{ url_for('locals') }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Aucun résultat -->
+        {% if not results.prestations and not results.materiels and not results.djs and not results.locals %}
+        <div class="text-center py-12">
+            <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-medium text-gray-600 mb-2">Aucun résultat trouvé</h3>
+            <p class="text-gray-500 mb-6">Essayez avec d'autres mots-clés</p>
+            <div class="text-sm text-gray-400">
+                <p>Conseils de recherche :</p>
+                <ul class="mt-2 space-y-1">
+                    <li>• Utilisez des mots-clés simples</li>
+                    <li>• Vérifiez l'orthographe</li>
+                    <li>• Essayez des synonymes</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Page d'accueil de recherche -->
+    <div class="text-center py-12">
+        <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-600 mb-2">Recherche globale</h3>
+        <p class="text-gray-500 mb-6">Tapez votre recherche dans la barre ci-dessus</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            <div class="text-center p-4">
+                <i class="fas fa-calendar-alt text-2xl text-blue-500 mb-2"></i>
+                <h4 class="font-medium">Missions</h4>
+                <p class="text-sm text-gray-500">Client, lieu, notes</p>
+            </div>
+            <div class="text-center p-4">
+                <i class="fas fa-cogs text-2xl text-green-500 mb-2"></i>
+                <h4 class="font-medium">Équipement</h4>
+                <p class="text-sm text-gray-500">Nom, catégorie</p>
+            </div>
+            <div class="text-center p-4">
+                <i class="fas fa-user text-2xl text-yellow-500 mb-2"></i>
+                <h4 class="font-medium">Prestataires</h4>
+                <p class="text-sm text-gray-500">Nom, contact, notes</p>
+            </div>
+            <div class="text-center p-4">
+                <i class="fas fa-building text-2xl text-purple-500 mb-2"></i>
+                <h4 class="font-medium">Sites</h4>
+                <p class="text-sm text-gray-500">Nom, adresse</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

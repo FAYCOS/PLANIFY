@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier équipement - Planify{% endblock %}
+{% block page_title %}Modifier {{ materiel.nom }}{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-2xl mx-auto">
+        <form method="POST" class="space-y-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i>
+                        Modifier les informations
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label" for="nom">Nom de l'équipement *</label>
+                            <input type="text" id="nom" name="nom" class="form-control" 
+                                   value="{{ materiel.nom }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="numero_serie">Numéro de série</label>
+                            <input type="text" id="numero_serie" name="numero_serie" class="form-control" 
+                                   value="{{ materiel.numero_serie or '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="categorie">Catégorie</label>
+                            <select id="categorie" name="categorie" class="form-control form-select">
+                                <option value="">Sélectionner une catégorie</option>
+                                <option value="Mixage" {% if materiel.categorie == 'Mixage' %}selected{% endif %}>Mixage</option>
+                                <option value="Lecture" {% if materiel.categorie == 'Lecture' %}selected{% endif %}>Lecture</option>
+                                <option value="Son" {% if materiel.categorie == 'Son' %}selected{% endif %}>Son</option>
+                                <option value="Micro" {% if materiel.categorie == 'Micro' %}selected{% endif %}>Micro</option>
+                                <option value="Éclairage" {% if materiel.categorie == 'Éclairage' %}selected{% endif %}>Éclairage</option>
+                                <option value="Câbles" {% if materiel.categorie == 'Câbles' %}selected{% endif %}>Câbles</option>
+                                <option value="Autre" {% if materiel.categorie == 'Autre' %}selected{% endif %}>Autre</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="local_id">Site *</label>
+                            <select id="local_id" name="local_id" class="form-control form-select" required>
+                                {% for local in locals %}
+                                <option value="{{ local.id }}" {% if local.id == materiel.local_id %}selected{% endif %}>
+                                    {{ local.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="quantite">Quantité *</label>
+                            <input type="number" id="quantite" name="quantite" class="form-control" 
+                                   min="1" value="{{ materiel.quantite }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="prix_location">Prix de location (€)</label>
+                            <input type="number" id="prix_location" name="prix_location" class="form-control" 
+                                   min="0" step="0.01" value="{{ materiel.prix_location or 0 }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="statut">Statut</label>
+                            <select id="statut" name="statut" class="form-control form-select">
+                                <option value="disponible" {% if materiel.statut == 'disponible' %}selected{% endif %}>Disponible</option>
+                                <option value="maintenance" {% if materiel.statut == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                                <option value="hors_service" {% if materiel.statut == 'hors_service' %}selected{% endif %}>Hors service</option>
+                                <option value="archive" {% if materiel.statut == 'archive' %}selected{% endif %}>Archivé</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group mt-4">
+                        <label class="form-label" for="notes_technicien">Notes techniques</label>
+                        <textarea id="notes_technicien" name="notes_technicien" class="form-control" rows="4">{{ materiel.notes_technicien or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Sauvegarder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

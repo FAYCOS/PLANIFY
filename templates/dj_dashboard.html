@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord Prestataire - Planify{% endblock %}
+
+{% block page_title %}Tableau de bord Prestataire{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Message de bienvenue -->
+    <div class="welcome-card">
+        <div class="welcome-content">
+            <h1><i class="fas fa-music"></i> Bienvenue, {{ current_user.prenom }} {{ current_user.nom }}</h1>
+            <p>Interface de gestion de vos missions</p>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ prestations_dj|length }}</h3>
+                <p>Total Missions</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ prestations_a_venir|length }}</h3>
+                <p>À venir</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ prestations_dj|selectattr('statut', 'equalto', 'confirmee')|list|length }}</h3>
+                <p>Confirmées</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ prestations_dj|selectattr('statut', 'equalto', 'planifiee')|list|length }}</h3>
+                <p>Planifiées</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation par onglets -->
+    <div class="card">
+        <div class="card-header">
+            <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                <button onclick="showTab('prestations')" id="tab-prestations" class="tab-button active">
+                    <i class="fas fa-calendar-check"></i>
+                    Missions
+                </button>
+                <button onclick="showTab('parametres')" id="tab-parametres" class="tab-button">
+                    <i class="fas fa-cog"></i>
+                    Paramètres
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglet Prestations -->
+    <div id="content-prestations" class="tab-content">
+        <!-- Prestations à venir -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-calendar-check"></i>
+                    Prochaines missions
+                </h3>
+            </div>
+        <div class="card-body">
+            {% if prestations_a_venir %}
+            <div class="prestations-list">
+                {% for prestation in prestations_a_venir %}
+                <div class="prestation-item">
+                    <div class="prestation-info">
+                        <div class="prestation-header">
+                            <h4>{{ prestation.client }}</h4>
+                            <span class="status-badge status-{{ prestation.statut }}">
+                                {{ prestation.statut|title }}
+                            </span>
+                        </div>
+                        <div class="prestation-details">
+                            <p><i class="fas fa-map-marker-alt"></i> {{ prestation.lieu }}</p>
+                            <p><i class="fas fa-calendar"></i> {{ prestation.date_debut.strftime('%d/%m/%Y') }}</p>
+                            <p><i class="fas fa-clock"></i> {{ prestation.heure_debut.strftime('%H:%M') }} - {{ prestation.heure_fin.strftime('%H:%M') }}</p>
+                            {% if prestation.client_telephone %}
+                            <p><i class="fas fa-phone"></i> {{ prestation.client_telephone }}</p>
+                            {% endif %}
+                            {% if prestation.client_email %}
+                            <p><i class="fas fa-envelope"></i> {{ prestation.client_email }}</p>
+                            {% endif %}
+                        </div>
+                        {% if prestation.materiels %}
+                        <div class="materiels-list">
+                            <strong>Équipement :</strong>
+                            {% for materiel in prestation.materiels %}
+                            <span class="materiel-tag">{{ materiel.nom }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if prestation.notes %}
+                        <div class="prestation-notes">
+                            <strong>Notes :</strong> {{ prestation.notes }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="prestation-actions">
+                        <a href="{{ url_for('detail_prestation', prestation_id=prestation.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye"></i>
+                            Voir détails
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>Aucune mission à venir</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Toutes les prestations -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-list"></i>
+                Toutes mes missions
+            </h3>
+        </div>
+        <div class="card-body">
+            {% if prestations_dj %}
+            <div class="table-container">
+                <table class="table scan-aligned-table scan-cols-6">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Lieu</th>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prestation in prestations_dj %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ prestation.client }}</div>
+                                {% if prestation.client_telephone %}
+                                <div class="text-sm text-gray-600">
+                                    <i class="fas fa-phone"></i> {{ prestation.client_telephone }}
+                                </div>
+                                {% endif %}
+                                {% if prestation.client_email %}
+                                <div class="text-sm text-gray-600">
+                                    <i class="fas fa-envelope"></i> {{ prestation.client_email }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ prestation.lieu }}</td>
+                            <td>{{ prestation.date_debut.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ prestation.heure_debut.strftime('%H:%M') }} - {{ prestation.heure_fin.strftime('%H:%M') }}</td>
+                            <td>
+                                <span class="status-badge status-{{ prestation.statut }}">
+                                    {{ prestation.statut|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('detail_prestation', prestation_id=prestation.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>Aucune mission assignée</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+    <!-- Onglet Paramètres -->
+    <div id="content-parametres" class="tab-content" style="display: none;">
+        <!-- Paramètres de notification -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-bell"></i>
+                    Notifications
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-medium">Notifications par email</h4>
+                            <p class="text-sm text-gray-600">Recevoir des notifications par email pour vos missions</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-medium">Rappels automatiques</h4>
+                            <p class="text-sm text-gray-600">Rappels 24h avant vos missions</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations du profil -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-user"></i>
+                    Mon profil
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Nom complet</label>
+                        <p class="text-gray-900">{{ current_user.prenom }} {{ current_user.nom }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Email</label>
+                        <p class="text-gray-900">{{ current_user.email }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Téléphone</label>
+                        <p class="text-gray-900">{{ current_user.telephone or 'Non renseigné' }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Date d'inscription</label>
+                        <p class="text-gray-900">{{ current_user.date_creation.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.welcome-card {
+    background: linear-gradient(135deg, #0071e3 0%, #005bb5 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-content h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.welcome-content p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #0071e3, #005bb5);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.stat-content h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.prestations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.prestation-item {
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.prestation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.prestation-header h4 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.125rem;
+}
+
+.prestation-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.prestation-details p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.materiels-list {
+    margin-top: 0.5rem;
+}
+
+.materiel-tag {
+    display: inline-block;
+    background: #e5e7eb;
+    color: #374151;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.prestation-notes {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #f3f4f6;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.prestation-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+/* Styles pour les onglets */
+.tab-button {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.tab-button.active {
+    background: white;
+    color: #1f2937;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+    color: #374151;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Styles pour les switches */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #0071e3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+@media (max-width: 768px) {
+    .prestation-item {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .prestation-actions {
+        align-self: stretch;
+    }
+    
+    .prestation-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-button {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+}
+</style>
+
+<script>
+// Gestion des onglets
+function showTab(tabName) {
+    // Masquer tous les contenus d'onglets
+    const contents = document.querySelectorAll('.tab-content');
+    contents.forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('active');
+    });
+    
+    // Désactiver tous les boutons d'onglets
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Afficher le contenu sélectionné
+    const selectedContent = document.getElementById(`content-${tabName}`);
+    if (selectedContent) {
+        selectedContent.style.display = 'block';
+        selectedContent.classList.add('active');
+    }
+    
+    // Activer le bouton sélectionné
+    const selectedButton = document.getElementById(`tab-${tabName}`);
+    if (selectedButton) {
+        selectedButton.classList.add('active');
+    }
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Afficher l'onglet prestations par défaut
+    showTab('prestations');
+});
+</script>
+{% endblock %}

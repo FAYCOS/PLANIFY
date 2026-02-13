@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Choix TVA - Devis {{ devis.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Choix de la TVA - Devis {{ devis.numero }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="alert alert-info">
+                                <h5><i class="fas fa-info-circle me-2"></i>Configuration de la TVA</h5>
+                                <p class="mb-0">Choisissez si vous souhaitez inclure la TVA dans ce devis. Le taux utilisé est celui du devis.</p>
+                            </div>
+                            
+                            <form id="tvaForm" method="POST" action="{{ url_for('devis_pdf', devis_id=devis.id) }}" target="_blank">
+                                <div class="mb-4">
+                                    {% if devis.est_signe %}
+                                    <div class="alert alert-warning">
+                                        Ce devis est signé : la TVA est figée et ne peut plus être modifiée.
+                                    </div>
+                                    {% set tva_default = devis.tva_incluse if devis.tva_incluse is not none else True %}
+                                    <input type="hidden" name="include_tva" value="{{ '1' if tva_default else '0' }}">
+                                    <p class="mb-0"><strong>TVA :</strong> {{ 'Incluse' if tva_default else 'Sans TVA' }}</p>
+                                    {% elif parametres and parametres.tva_non_applicable %}
+                                    <div class="alert alert-warning">
+                                        TVA non applicable (art. 293 B du CGI). Le devis sera généré sans TVA.
+                                    </div>
+                                    <input type="hidden" name="include_tva" value="0">
+                                    {% else %}
+                                    {% set tva_default = devis.tva_incluse if devis.tva_incluse is not none else True %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="include_tva" id="no_tva" value="0" {% if not tva_default %}checked{% endif %}>
+                                        <label class="form-check-label" for="no_tva">
+                                            <strong>Sans TVA</strong>
+                                            <br>
+                                            <small class="text-muted">Le montant HT sera identique au montant TTC</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="include_tva" id="with_tva" value="1" {% if tva_default %}checked{% endif %}>
+                                        <label class="form-check-label" for="with_tva">
+                                            <strong>Avec TVA (taux du devis: {{ devis.taux_tva }}%)</strong>
+                                            <br>
+                                            <small class="text-muted">Le montant TTC sera calculé avec la TVA</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if parametres and parametres.signature_entreprise_path %}
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        {% set signature_default = parametres.signature_entreprise_enabled %}
+                                        <input class="form-check-input" type="checkbox" name="include_company_signature" id="include_company_signature"
+                                            value="1" {{ 'checked' if signature_default else '' }}>
+                                        <label class="form-check-label" for="include_company_signature">
+                                            <strong>Inclure la signature de l'entreprise sur le PDF</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-file-pdf me-2"></i>
+                                        Générer le PDF
+                                    </button>
+                                    <a href="{{ url_for('facturation') }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Retour aux devis
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Aperçu du devis</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Numéro:</strong> {{ devis.numero }}</p>
+                                    <p><strong>Client:</strong> {{ devis.client_nom }}</p>
+                                    <p><strong>Montant HT:</strong> {{ "%.2f"|format(devis.montant_ht) }} €</p>
+                                    
+                                    <div id="preview_tva" class="mt-3">
+                                        <p><strong>TVA:</strong> <span id="preview_tva_amount">0,00 €</span></p>
+                                        <p><strong>Total TTC:</strong> <span id="preview_total_ttc">{{ "%.2f"|format(devis.montant_ht) }} €</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const noTvaRadio = document.getElementById('no_tva');
+    const withTvaRadio = document.getElementById('with_tva');
+    const form = document.getElementById('tvaForm');
+    
+    const montantHt = {{ devis.montant_ht }};
+    const tauxTva = {{ devis.taux_tva or 0 }};
+    const tvaApplicable = {{ 'true' if not (parametres and parametres.tva_non_applicable) else 'false' }};
+    const tvaIncluseDefault = {{ 'true' if (devis.tva_incluse is none or devis.tva_incluse) else 'false' }};
+    
+    function updatePreview() {
+        let includeTva = tvaIncluseDefault;
+        if (withTvaRadio && noTvaRadio) {
+            includeTva = withTvaRadio.checked;
+        }
+        if (!tvaApplicable) {
+            includeTva = false;
+        }
+        
+        if (includeTva) {
+            const montantTva = montantHt * (tauxTva / 100);
+            const totalTtc = montantHt + montantTva;
+            
+            document.getElementById('preview_tva_amount').textContent = montantTva.toFixed(2) + ' €';
+            document.getElementById('preview_total_ttc').textContent = totalTtc.toFixed(2) + ' €';
+        } else {
+            document.getElementById('preview_tva_amount').textContent = '0,00 €';
+            document.getElementById('preview_total_ttc').textContent = montantHt.toFixed(2) + ' €';
+        }
+    }
+    
+    if (noTvaRadio) {
+        noTvaRadio.addEventListener('change', updatePreview);
+    }
+    if (withTvaRadio) {
+        withTvaRadio.addEventListener('change', updatePreview);
+    }
+    
+    // Initialiser l'aperçu
+    updatePreview();
+});
+</script>
+{% endblock %}
+

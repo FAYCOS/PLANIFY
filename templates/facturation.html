@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Facturation - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-header">
+        <div>
+            <p class="finance-eyebrow">Finance</p>
+            <h1>Facturation</h1>
+            <p class="finance-subtitle">Pilotez vos devis, factures et encaissements en un seul endroit.</p>
+        </div>
+        <div class="finance-actions">
+            <a href="{{ url_for('nouvelle_facture') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvelle facture
+            </a>
+            <a href="{{ url_for('creer_facture_depuis_prestation') }}" class="btn btn-success">
+                <i class="fas fa-clipboard-check"></i> Depuis mission
+            </a>
+            <a href="{{ url_for('nouveau_devis') }}" class="btn btn-secondary">
+                <i class="fas fa-file-signature"></i> Nouveau devis
+            </a>
+        </div>
+    </div>
+
+    <div class="finance-kpis">
+        <div class="finance-kpi">
+            <div class="finance-kpi-label">Total factures</div>
+            <div class="finance-kpi-value">{{ total_factures }}</div>
+            <div class="finance-kpi-meta">Payées : {{ factures_payees }}</div>
+        </div>
+        <div class="finance-kpi">
+            <div class="finance-kpi-label">Factures en attente</div>
+            <div class="finance-kpi-value">{{ factures_en_attente }}</div>
+            <div class="finance-kpi-meta">Suivi relances</div>
+        </div>
+        <div class="finance-kpi">
+            <div class="finance-kpi-label">Factures en retard</div>
+            <div class="finance-kpi-value">{{ factures_en_retard }}</div>
+            <div class="finance-kpi-meta">À prioriser</div>
+        </div>
+        <div class="finance-kpi">
+            <div class="finance-kpi-label">Devis en attente</div>
+            <div class="finance-kpi-value">{{ devis_en_attente }}</div>
+            <div class="finance-kpi-meta">Acceptés : {{ devis_acceptes }}</div>
+        </div>
+    </div>
+
+    <div class="finance-grid">
+        <div class="finance-card">
+            <div class="finance-card-header">
+                <div>
+                    <p class="finance-card-kicker">Trésorerie</p>
+                    <h3 class="finance-card-title">Encaissements & sorties</h3>
+                </div>
+                <span class="finance-chip">12 derniers mois</span>
+            </div>
+            <div class="finance-chart-wrapper">
+                <canvas id="financeCashflowChart"></canvas>
+            </div>
+        </div>
+        <div class="finance-card">
+            <div class="finance-card-header">
+                <div>
+                    <p class="finance-card-kicker">Exports</p>
+                    <h3 class="finance-card-title">Données rapides</h3>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                <a href="{{ url_for('export_factures') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-download"></i> Export factures
+                </a>
+                <a href="{{ url_for('export_devis') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-download"></i> Export devis
+                </a>
+                <div class="finance-meta">Dernière mise à jour : {{ now.strftime('%d/%m/%Y %H:%M') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="finance-card finance-filters-card">
+        <form method="GET" class="finance-filters-form" data-no-csrf="true">
+            <input type="hidden" name="view" value="{{ view }}">
+            <div class="finance-filter-group">
+                <label for="date_from">Du</label>
+                <input type="date" id="date_from" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from or '' }}">
+            </div>
+            <div class="finance-filter-group">
+                <label for="date_to">Au</label>
+                <input type="date" id="date_to" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to or '' }}">
+            </div>
+            <div class="finance-filter-group">
+                <label for="statut">Statut</label>
+                <select id="statut" name="statut" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="brouillon" {% if filters.statut == 'brouillon' %}selected{% endif %}>Brouillon</option>
+                    <option value="envoyee" {% if filters.statut == 'envoyee' %}selected{% endif %}>Envoyée</option>
+                    <option value="partiellement_payee" {% if filters.statut == 'partiellement_payee' %}selected{% endif %}>Partiellement payée</option>
+                    <option value="payee" {% if filters.statut == 'payee' %}selected{% endif %}>Payée</option>
+                    <option value="en_retard" {% if filters.statut == 'en_retard' %}selected{% endif %}>En retard</option>
+                    <option value="annulee" {% if filters.statut == 'annulee' %}selected{% endif %}>Annulée</option>
+                    <option value="accepte" {% if filters.statut == 'accepte' %}selected{% endif %}>Devis accepté</option>
+                    <option value="refuse" {% if filters.statut == 'refuse' %}selected{% endif %}>Devis refusé</option>
+                </select>
+            </div>
+            {% if view == 'paiements' %}
+            <div class="finance-filter-group">
+                <label for="mode">Mode</label>
+                <select id="mode" name="mode" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="stripe" {% if filters.mode == 'stripe' %}selected{% endif %}>Stripe</option>
+                    <option value="virement" {% if filters.mode == 'virement' %}selected{% endif %}>Virement</option>
+                    <option value="especes" {% if filters.mode == 'especes' %}selected{% endif %}>Espèces</option>
+                    <option value="cheque" {% if filters.mode == 'cheque' %}selected{% endif %}>Chèque</option>
+                    <option value="carte" {% if filters.mode == 'carte' %}selected{% endif %}>Carte</option>
+                </select>
+            </div>
+            {% endif %}
+            <div class="finance-filter-group">
+                <label for="montant_min">Min</label>
+                <input type="number" step="0.01" id="montant_min" name="montant_min" class="form-control form-control-sm" value="{{ filters.montant_min or '' }}" placeholder="0">
+            </div>
+            <div class="finance-filter-group">
+                <label for="montant_max">Max</label>
+                <input type="number" step="0.01" id="montant_max" name="montant_max" class="form-control form-control-sm" value="{{ filters.montant_max or '' }}" placeholder="9999">
+            </div>
+            <button class="btn btn-sm btn-primary" type="submit">Filtrer</button>
+            <a href="{{ url_for('facturation', view=view) }}" class="btn btn-sm btn-outline-secondary">Réinitialiser</a>
+        </form>
+    </div>
+
+    <div class="finance-tabs">
+        <a class="finance-tab {% if view == 'factures' %}active{% endif %}" href="{{ url_for('facturation', view='factures', date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, montant_min=filters.montant_min, montant_max=filters.montant_max, mode=filters.mode) }}">Factures</a>
+        <a class="finance-tab {% if view == 'devis' %}active{% endif %}" href="{{ url_for('facturation', view='devis', date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, montant_min=filters.montant_min, montant_max=filters.montant_max, mode=filters.mode) }}">Devis</a>
+        <a class="finance-tab {% if view == 'paiements' %}active{% endif %}" href="{{ url_for('facturation', view='paiements', date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, montant_min=filters.montant_min, montant_max=filters.montant_max, mode=filters.mode) }}">Paiements</a>
+    </div>
+
+    <div class="finance-card finance-table-card">
+        <div class="table-responsive">
+            {% if view == 'factures' %}
+            <table class="table finance-table scan-aligned-table scan-cols-7" data-no-contextbox="true">
+                <thead>
+                    <tr>
+                        <th>Numéro</th>
+                        <th>Client</th>
+                        <th>Mission</th>
+                        <th>Montant TTC</th>
+                        <th>Statut</th>
+                        <th>Échéance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for facture in factures.items %}
+                    <tr>
+                        <td><strong>{{ facture.numero }}</strong></td>
+                        <td>{{ facture.client_nom }}</td>
+                        <td>
+                            <div>{{ facture.prestation_titre }}</div>
+                            <div class="finance-meta">{{ facture.date_prestation.strftime('%d/%m/%Y') }}</div>
+                        </td>
+                        <td>
+                            <strong>{{ "%.2f"|format(facture.montant_ttc) }} €</strong>
+                            {% if facture.montant_paye > 0 %}
+                            <div class="finance-meta">Payé : {{ "%.2f"|format(facture.montant_paye) }} €</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set facture_label = 'Partiellement payée' if facture.statut == 'partiellement_payee' else facture.statut|replace('_', ' ')|title %}
+                            <span class="finance-badge {{ 'finance-badge-success' if facture.statut == 'payee' else 'finance-badge-info' if facture.statut == 'partiellement_payee' else 'finance-badge-warning' if facture.statut == 'envoyee' else 'finance-badge-danger' if facture.statut == 'annulee' else 'finance-badge-danger' if facture.est_en_retard else 'finance-badge-neutral' }}">
+                                {{ facture_label }}
+                                {% if facture.est_en_retard %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ facture.date_echeance.strftime('%d/%m/%Y') if facture.date_echeance else '-' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('detail_facture', facture_id=facture.id) }}" class="btn btn-outline-primary" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('facture_pdf', facture_id=facture.id) }}" class="btn btn-outline-success" title="PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Aucune facture trouvée.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% elif view == 'devis' %}
+            <table class="table finance-table scan-aligned-table scan-cols-7" data-no-contextbox="true">
+                <thead>
+                    <tr>
+                        <th>Numéro</th>
+                        <th>Client</th>
+                        <th>Mission</th>
+                        <th>Montant TTC</th>
+                        <th>Statut</th>
+                        <th>Validité</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for devis_item in devis.items %}
+                    {% set tva_applicable = not (parametres and parametres.tva_non_applicable) %}
+                    {% set tva_incluse = devis_item.tva_incluse if devis_item.tva_incluse is not none else True %}
+                    {% set devis_total = devis_item.montant_ttc if tva_applicable and tva_incluse else devis_item.montant_ht %}
+                    <tr>
+                        <td><strong>{{ devis_item.numero }}</strong></td>
+                        <td>{{ devis_item.client_nom }}</td>
+                        <td>
+                            <div>{{ devis_item.prestation_titre }}</div>
+                            <div class="finance-meta">{{ devis_item.date_prestation.strftime('%d/%m/%Y') if devis_item.date_prestation else '-' }}</div>
+                        </td>
+                        <td><strong>{{ "%.2f"|format(devis_total) }} €</strong></td>
+                        <td>
+                            <span class="finance-badge {{ 'finance-badge-success' if devis_item.statut == 'accepte' else 'finance-badge-warning' if devis_item.statut == 'envoye' else 'finance-badge-danger' if devis_item.statut in ['refuse', 'annule'] else 'finance-badge-neutral' }}">
+                                {{ devis_item.statut|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td>{{ devis_item.date_validite.strftime('%d/%m/%Y') if devis_item.date_validite else '-' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('detail_devis', devis_id=devis_item.id) }}" class="btn btn-outline-primary" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('devis_choix_tva', devis_id=devis_item.id) }}" class="btn btn-outline-success" title="PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Aucun devis trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <table class="table finance-table scan-aligned-table scan-cols-6" data-no-contextbox="true">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Facture</th>
+                        <th>Client</th>
+                        <th>Montant</th>
+                        <th>Mode</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paiement in paiements.items %}
+                    <tr>
+                        <td>{{ paiement.date_paiement.strftime('%d/%m/%Y %H:%M') if paiement.date_paiement else paiement.date_creation.strftime('%d/%m/%Y %H:%M') if paiement.date_creation else '-' }}</td>
+                        <td>
+                            {% if paiement.facture %}
+                            <a href="{{ url_for('detail_facture', facture_id=paiement.facture.id) }}">{{ paiement.facture.numero }}</a>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ paiement.client_nom or '-' }}</td>
+                        <td><strong>{{ "%.2f"|format(paiement.montant or 0) }} {{ paiement.devise or 'EUR' }}</strong></td>
+                        <td>{{ paiement.mode_paiement|default('-', true)|replace('_', ' ')|title }}</td>
+                        <td>
+                            <span class="finance-badge {{ 'finance-badge-success' if paiement.statut == 'reussi' else 'finance-badge-warning' if paiement.statut == 'en_attente' else 'finance-badge-danger' }}">
+                                {{ paiement.statut|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Aucun paiement trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Pagination" class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('facturation', view=view, page=pagination.prev_num, date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, montant_min=filters.montant_min, montant_max=filters.montant_max, mode=filters.mode) }}">Précédent</a>
+            </li>
+            {% endif %}
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('facturation', view=view, page=page_num, date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, montant_min=filters.montant_min, montant_max=filters.montant_max, mode=filters.mode) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('facturation', view=view, page=pagination.next_num, date_from=filters.date_from, date_to=filters.date_to, statut=filters.statut, montant_min=filters.montant_min, montant_max=filters.montant_max, mode=filters.mode) }}">Suivant</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+const chartPayload = {{ chart_data | tojson }};
+const chartEl = document.getElementById('financeCashflowChart');
+if (chartEl) {
+    const ctx = chartEl.getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartPayload.labels,
+            datasets: [
+                {
+                    label: 'Encaissements',
+                    data: chartPayload.encaissements,
+                    backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                    borderRadius: 8
+                },
+                {
+                    label: 'Décaissements',
+                    data: chartPayload.decaissements,
+                    backgroundColor: 'rgba(239, 68, 68, 0.4)',
+                    borderRadius: 8
+                },
+                {
+                    type: 'line',
+                    label: 'Solde',
+                    data: chartPayload.solde,
+                    borderColor: 'rgba(31, 107, 255, 0.9)',
+                    backgroundColor: 'rgba(31, 107, 255, 0.12)',
+                    tension: 0.35,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'bottom' }
+            },
+            scales: {
+                y: { beginAtZero: true },
+                y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

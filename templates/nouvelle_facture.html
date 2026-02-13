@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle Facture - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="row">
+        <div class="col-12">
+            
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card finance-section">
+                <div class="card-body">
+                    <form method="POST" id="factureForm">
+        <div class="finance-detail-header">
+            <div>
+                <p class="finance-eyebrow">Facture</p>
+                <h1 class="finance-detail-title">Créer une facture</h1>
+                <p class="finance-subtitle">Renseignez les informations de facturation.</p>
+            </div>
+            <div class="finance-detail-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+                <a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+
+                        <div class="row">
+                            <!-- Informations client -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="fas fa-user"></i> Informations Client</h5>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="client_nom" class="form-label">Nom du client *</label>
+                                    <input type="text" class="form-control" id="client_nom" name="client_nom" required>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="client_email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="client_email" name="client_email">
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="client_telephone" class="form-label">Téléphone</label>
+                                    <input type="tel" class="form-control" id="client_telephone" name="client_telephone">
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                <label for="client_adresse" class="form-label">Adresse</label>
+                                <textarea class="form-control" id="client_adresse" name="client_adresse" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="client_siren" class="form-label">SIREN client (optionnel)</label>
+                                <input type="text" class="form-control" id="client_siren" name="client_siren" placeholder="Ex: 123 456 789">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="client_tva" class="form-label">TVA client (optionnel)</label>
+                                <input type="text" class="form-control" id="client_tva" name="client_tva" placeholder="Ex: FR12 345678901">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="numero_bon_commande" class="form-label">N° bon de commande (optionnel)</label>
+                                <input type="text" class="form-control" id="numero_bon_commande" name="numero_bon_commande" placeholder="Ex: BC-2026-001">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="checkbox" name="client_professionnel" value="1" class="form-checkbox h-5 w-5 text-blue-600">
+                                    <span class="text-gray-700">Client professionnel (SIREN requis)</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group md:col-span-2">
+                                <label for="adresse_livraison" class="form-label">Adresse de livraison (si différente)</label>
+                                <textarea class="form-control" id="adresse_livraison" name="adresse_livraison" rows="2"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="nature_operation" class="form-label">Nature de l’opération</label>
+                                <input type="text" class="form-control" id="nature_operation" name="nature_operation" placeholder="Prestations de services">
+                            </div>
+
+                            <div class="form-group flex items-center gap-3">
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="checkbox" name="tva_sur_debits" value="1" class="form-checkbox h-5 w-5 text-blue-600">
+                                    <span class="text-gray-700">TVA sur les débits</span>
+                                </label>
+                            </div>
+                            </div>
+
+                            <!-- Informations prestation -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="fas fa-calendar"></i> Informations Mission</h5>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="prestation_titre" class="form-label">Titre de la mission *</label>
+                                    <input type="text" class="form-control" id="prestation_titre" name="prestation_titre" required>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="prestation_description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="prestation_description" name="prestation_description" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="date_prestation" class="form-label">Date *</label>
+                                            <input type="date" class="form-control" id="date_prestation" name="date_prestation" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="lieu" class="form-label">Lieu *</label>
+                                            <input type="text" class="form-control" id="lieu" name="lieu" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="heure_debut" class="form-label">Heure début</label>
+                                            <input type="time" class="form-control" id="heure_debut" name="heure_debut" value="20:00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="heure_fin" class="form-label">Heure fin</label>
+                                            <input type="time" class="form-control" id="heure_fin" name="heure_fin" value="02:00">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="dj_id" class="form-label">Prestataire</label>
+                                    <select class="form-control" id="dj_id" name="dj_id">
+                                        <option value="">Sélectionner un Prestataire</option>
+                                        {% for dj in djs %}
+                                        <option value="{{ dj.id }}">{{ dj.nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Tarification -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h5 class="mb-3"><i class="fas fa-euro-sign"></i> Tarification</h5>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="tarif_horaire" class="form-label">Tarif horaire (€) *</label>
+                                    <input type="number" class="form-control" id="tarif_horaire" name="tarif_horaire" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="duree_heures" class="form-label">Durée (heures) *</label>
+                                    <input type="number" class="form-control" id="duree_heures" name="duree_heures" step="0.5" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="taux_tva" class="form-label">Taux TVA (%)</label>
+                                    <input type="number" class="form-control" id="taux_tva" name="taux_tva" step="0.01" min="0" max="100" value="20">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="frais_transport" class="form-label">Frais de transport (€)</label>
+                                    <input type="number" class="form-control" id="frais_transport" name="frais_transport" step="0.01" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="frais_materiel" class="form-label">Frais équipement (€)</label>
+                                    <input type="number" class="form-control" id="frais_materiel" name="frais_materiel" step="0.01" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="remise_pourcentage" class="form-label">Remise (%)</label>
+                                    <input type="number" class="form-control" id="remise_pourcentage" name="remise_pourcentage" step="0.01" min="0" max="100" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="remise_montant" class="form-label">Remise (€)</label>
+                                    <input type="number" class="form-control" id="remise_montant" name="remise_montant" step="0.01" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Informations facturation -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="fas fa-file-invoice"></i> Informations Facturation</h5>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="date_echeance" class="form-label">Date d'échéance</label>
+                                    <input type="date" class="form-control" id="date_echeance" name="date_echeance">
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="conditions_paiement" class="form-label">Conditions de paiement</label>
+                                    <textarea class="form-control" id="conditions_paiement" name="conditions_paiement" rows="3" placeholder="Ex: Paiement à 30 jours"></textarea>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="statut" class="form-label">Statut</label>
+                                    <select class="form-control" id="statut" name="statut">
+                                        <option value="brouillon">Brouillon</option>
+                                        <option value="envoyee">Envoyée</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="fas fa-link"></i> Liens</h5>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="prestation_id" class="form-label">Mission associée</label>
+                                    <select class="form-control" id="prestation_id" name="prestation_id">
+                                        <option value="">Aucune mission</option>
+                                        {% for prestation in prestations %}
+                                        <option value="{{ prestation.id }}">{{ prestation.client }} - {{ prestation.date_debut.strftime('%d/%m/%Y') }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="devis_id" class="form-label">Devis associé</label>
+                                    <select class="form-control" id="devis_id" name="devis_id">
+                                        <option value="">Aucun devis</option>
+                                        {% for devis in devis %}
+                                        <option value="{{ devis.id }}">{{ devis.numero }} - {{ devis.client_nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="notes" class="form-label">Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calcul automatique -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-calculator"></i> Calcul automatique</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <strong>Montant HT:</strong> <span id="montant_ht">0.00€</span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>TVA:</strong> <span id="montant_tva">0.00€</span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Montant TTC:</strong> <span id="montant_ttc">0.00€</span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Remise:</strong> <span id="montant_remise">0.00€</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Boutons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('facturation') }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Retour
+                                    </a>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary" onclick="calculerTotaux()">
+                                            <i class="fas fa-calculator"></i> Recalculer
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Créer la facture
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    
+        <div class="finance-form-actions">
+            <a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+        </div>
+
+    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculerTotaux() {
+    const tarifHoraire = parseFloat(document.getElementById('tarif_horaire').value) || 0;
+    const dureeHeures = parseFloat(document.getElementById('duree_heures').value) || 0;
+    const fraisTransport = parseFloat(document.getElementById('frais_transport').value) || 0;
+    const fraisMateriel = parseFloat(document.getElementById('frais_materiel').value) || 0;
+    const tauxTva = parseFloat(document.getElementById('taux_tva').value) || 0;
+    const remisePourcentage = parseFloat(document.getElementById('remise_pourcentage').value) || 0;
+    const remiseMontant = parseFloat(document.getElementById('remise_montant').value) || 0;
+    
+    // Calcul du montant HT
+    let montantHt = (tarifHoraire * dureeHeures) + fraisTransport + fraisMateriel;
+    
+    // Application de la remise
+    let remise = 0;
+    if (remisePourcentage > 0) {
+        remise = montantHt * (remisePourcentage / 100);
+    } else {
+        remise = remiseMontant;
+    }
+    
+    montantHt = Math.max(0, montantHt - remise);
+    
+    // Calcul de la TVA
+    const montantTva = montantHt * (tauxTva / 100);
+    
+    // Calcul du montant TTC
+    const montantTtc = montantHt + montantTva;
+    
+    // Affichage des résultats
+    document.getElementById('montant_ht').textContent = montantHt.toFixed(2) + '€';
+    document.getElementById('montant_tva').textContent = montantTva.toFixed(2) + '€';
+    document.getElementById('montant_ttc').textContent = montantTtc.toFixed(2) + '€';
+    document.getElementById('montant_remise').textContent = remise.toFixed(2) + '€';
+}
+
+// Recalculer automatiquement quand les valeurs changent
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = ['tarif_horaire', 'duree_heures', 'frais_transport', 'frais_materiel', 'taux_tva', 'remise_pourcentage', 'remise_montant'];
+    
+    inputs.forEach(function(inputId) {
+        document.getElementById(inputId).addEventListener('input', calculerTotaux);
+    });
+    
+    // Calcul initial
+    calculerTotaux();
+    
+    // Définir la date d'aujourd'hui par défaut
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date_prestation').value = today;
+    
+    // Définir la date d'échéance à 30 jours par défaut
+    const echeance = new Date();
+    echeance.setDate(echeance.getDate() + 30);
+    document.getElementById('date_echeance').value = echeance.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}
+
+
+
+
+
+

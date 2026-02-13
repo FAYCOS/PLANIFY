@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Utilisateurs - Planify{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-users"></i> Gestion des Utilisateurs</h1>
+        <p>Gérer les comptes utilisateurs et leurs rôles</p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message|apply_terminology }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="card">
+        <div class="card-header">
+            <div class="header-actions">
+                <h2>Liste des Utilisateurs</h2>
+                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    Nouvel Utilisateur
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if users %}
+                <div style="display: grid; gap: 16px;">
+                    {% for user in users %}
+                    <div style="background: white; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 16px; padding: 24px; display: flex; align-items: center; gap: 24px; transition: all 0.2s ease;">
+                        
+                        <!-- Avatar -->
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #0071E3 0%, #005bb5 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 600; flex-shrink: 0; overflow: hidden; position: relative;">
+                            {% set prenom_initial = (user.prenom or '')[:1] %}
+                            {% set nom_initial = (user.nom or '')[:1] %}
+                            {% set initials = (prenom_initial ~ nom_initial).strip() %}
+                            {% if user.photo_profil %}
+                                <img src="{{ url_for('static', filename='uploads/' + user.photo_profil) }}" 
+                                     alt="{{ user.prenom or 'Utilisateur' }} {{ user.nom or '' }}"
+                                     style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;"
+                                     onerror="this.style.display='none'; this.parentElement.innerText='{{ initials or 'U' }}';">
+                            {% else %}
+                                {{ initials or 'U' }}
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Infos utilisateur -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 17px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                                {{ user.prenom }} {{ user.nom }}
+                            </div>
+                            <div style="font-size: 13px; color: #86868b; margin-bottom: 8px;">
+                                @{{ user.username }}
+                            </div>
+                            <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                                <span class="role-badge role-{{ user.role }}">
+                                    {% if user.role == 'admin' %}
+                                        <i class="fas fa-crown"></i> {{ user.role|role_label }}
+                                    {% elif user.role == 'manager' %}
+                                        <i class="fas fa-user-tie"></i> {{ user.role|role_label }}
+                                    {% elif user.role == 'dj' %}
+                                        <i class="fas fa-music"></i> {{ user.role|role_label }}
+                                    {% elif user.role == 'technicien' %}
+                                        <i class="fas fa-tools"></i> {{ user.role|role_label }}
+                                    {% endif %}
+                                </span>
+                                {% if user.actif %}
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Actif
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactif
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Contact -->
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <i class="fas fa-envelope" style="color: #86868b; width: 16px;"></i>
+                                <span style="font-size: 14px; color: #1d1d1f;">{{ user.email }}</span>
+                            </div>
+                            {% if user.telephone %}
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-phone" style="color: #86868b; width: 16px;"></i>
+                                <span style="font-size: 14px; color: #515154;">{{ user.telephone }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                            <a href="{{ url_for('edit_user', user_id=user.id) }}" 
+                               style="padding: 10px 20px; border-radius: 10px; background: #0071E3; color: white; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                               onmouseover="this.style.background='#0077ED'"
+                               onmouseout="this.style.background='#0071E3'">
+                                <i class="fas fa-edit"></i>
+                                Modifier
+                            </a>
+                            {% if user.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('toggle_user', user_id=user.id) }}" 
+                                      style="display: inline;" 
+                                      onsubmit="return confirm('Changer le statut de cet utilisateur ?')">
+                                    <button type="submit" 
+                                            style="padding: 10px 16px; border-radius: 10px; background: {% if user.actif %}#FF9500{% else %}#34C759{% endif %}; color: white; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;"
+                                            title="{{ 'Désactiver' if user.actif else 'Activer' }}">
+                                        <i class="fas fa-{{ 'ban' if user.actif else 'check' }}"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>Aucun utilisateur</h3>
+                    <p>Commencez par créer un utilisateur</p>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        Créer le premier utilisateur
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>Statistiques</h2>
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ users|length }}</h3>
+                        <p>Total utilisateurs</p>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h3>
+                        <p>Administrateurs</p>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ users|selectattr('role', 'equalto', 'manager')|list|length }}</h3>
+                        <p>Managers</p>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ users|selectattr('role', 'equalto', 'dj')|list|length }}</h3>
+                        <p>Prestataires</p>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ users|selectattr('role', 'equalto', 'technicien')|list|length }}</h3>
+                        <p>Prestataires techniques</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background: #0071e3;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+}
+
+.user-details strong {
+    display: block;
+    color: #333;
+    font-size: 14px;
+}
+
+.user-details small {
+    color: #666;
+    font-size: 12px;
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.role-admin {
+    background: #ff6b6b;
+    color: white;
+}
+
+.role-manager {
+    background: #4ecdc4;
+    color: white;
+}
+
+.role-dj {
+    background: #45b7d1;
+    color: white;
+}
+
+.role-technicien {
+    background: #96ceb4;
+    color: white;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    background: #0071e3;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-item {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* Debug - bordures visibles */
+.table th,
+.table td {
+    border: 1px solid #dee2e6 !important;
+    padding: 12px !important;
+    vertical-align: middle !important;
+}
+
+.table thead th {
+    background: #f8f9fa !important;
+    font-weight: 600 !important;
+}
+</style>
+{% endblock %}

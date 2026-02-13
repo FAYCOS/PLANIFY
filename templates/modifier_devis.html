@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier devis {{ devis.numero }} - Planify{% endblock %}
+{% block page_title %}Modifier le devis {{ devis.numero }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="max-w-6xl mx-auto">
+        <form method="POST" class="space-y-6">
+        <div class="finance-detail-header">
+            <div>
+                <p class="finance-eyebrow">Devis</p>
+                <h1 class="finance-detail-title">Modifier le devis</h1>
+                <p class="finance-subtitle">Mettez à jour votre proposition commerciale.</p>
+            </div>
+            <div class="finance-detail-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+                <a href="{{ url_for('detail_devis', devis_id=devis.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+
+            <!-- Informations client -->
+            <div class="card finance-section">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user"></i>
+                        Informations client
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="client_nom">Nom du client *</label>
+                            <input type="text" id="client_nom" name="client_nom" class="form-control" 
+                                   value="{{ devis.client_nom }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="client_email">Email</label>
+                            <input type="email" id="client_email" name="client_email" class="form-control"
+                                   value="{{ devis.client_email or '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="client_telephone">Téléphone</label>
+                            <input type="tel" id="client_telephone" name="client_telephone" class="form-control"
+                                   value="{{ devis.client_telephone or '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="client_adresse">Adresse</label>
+                            <textarea id="client_adresse" name="client_adresse" class="form-control" rows="3">{{ devis.client_adresse or '' }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="client_siren">SIREN client (optionnel)</label>
+                            <input type="text" id="client_siren" name="client_siren" class="form-control" value="{{ devis.client_siren or '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="client_tva">TVA client (optionnel)</label>
+                            <input type="text" id="client_tva" name="client_tva" class="form-control" value="{{ devis.client_tva or '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="numero_bon_commande">N° bon de commande (optionnel)</label>
+                            <input type="text" id="numero_bon_commande" name="numero_bon_commande" class="form-control" value="{{ devis.numero_bon_commande or '' }}">
+                        </div>
+
+                        <div class="form-group flex items-center gap-3">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="client_professionnel" {% if devis.client_professionnel %}checked{% endif %}>
+                                <span>Client professionnel (SIREN requis)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label" for="adresse_livraison">Adresse de livraison (si différente)</label>
+                            <textarea id="adresse_livraison" name="adresse_livraison" class="form-control" rows="2">{{ devis.adresse_livraison or '' }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="nature_operation">Nature de l’opération</label>
+                            <input type="text" id="nature_operation" name="nature_operation" class="form-control" value="{{ devis.nature_operation or '' }}">
+                        </div>
+
+                        <div class="form-group flex items-center gap-3">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="tva_sur_debits" {% if devis.tva_sur_debits %}checked{% endif %}>
+                                <span>TVA sur les débits</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations prestation -->
+            <div class="card finance-section">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        Informations mission
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label class="form-label" for="prestation_titre">Titre de la mission *</label>
+                            <input type="text" id="prestation_titre" name="prestation_titre" class="form-control" 
+                                   value="{{ devis.prestation_titre }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="prestation_description">Description</label>
+                            <textarea id="prestation_description" name="prestation_description" class="form-control" rows="3">{{ devis.prestation_description or '' }}</textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="form-group">
+                                <label class="form-label" for="date_prestation">Date de la mission *</label>
+                                <input type="date" id="date_prestation" name="date_prestation" class="form-control" 
+                                       value="{{ devis.date_prestation.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="heure_debut">Heure de début *</label>
+                                <input type="time" id="heure_debut" name="heure_debut" class="form-control" 
+                                       value="{{ devis.heure_debut.strftime('%H:%M') }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="heure_fin">Heure de fin *</label>
+                                <input type="time" id="heure_fin" name="heure_fin" class="form-control" 
+                                       value="{{ devis.heure_fin.strftime('%H:%M') }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="form-label" for="lieu">Lieu *</label>
+                                <input type="text" id="lieu" name="lieu" class="form-control" 
+                                       value="{{ devis.lieu }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="dj_id">Prestataire assigné</label>
+                                <select id="dj_id" name="dj_id" class="form-control form-select">
+                                    <option value="">Sélectionner un Prestataire</option>
+                                    {% for dj in djs %}
+                                        <option value="{{ dj.id }}" {% if devis.dj_id == dj.id %}selected{% endif %}>{{ dj.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assistant IA -->
+            <div class="card" id="ai-assistant">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-robot"></i>
+                        Assistant IA
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Aide à l'estimation et au choix du Prestataire</p>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="ai_nombre_invites">Nombre d'invités</label>
+                            <input type="number" id="ai_nombre_invites" class="form-control" min="1" placeholder="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ai_style_musical">Style musical</label>
+                            <input type="text" id="ai_style_musical" class="form-control" placeholder="House, pop...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ai_type_evenement">Type de mission</label>
+                            <input type="text" id="ai_type_evenement" class="form-control" placeholder="Maintenance, installation, événement...">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary" onclick="aiSuggestPrice()">
+                            <i class="fas fa-euro-sign"></i>
+                            Tarif conseillé
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="aiSuggestDj()">
+                            <i class="fas fa-user"></i>
+                            Suggérer Prestataire
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="aiDetectConflicts()">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Détecter conflits Prestataire
+                        </button>
+                    </div>
+                    <div id="ai-assistant-results" class="mt-4 space-y-2 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- Tarification -->
+            <div class="card finance-section">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-euro-sign"></i>
+                        Tarification
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="tarif_horaire">Tarif horaire (€) *</label>
+                            <input type="number" id="tarif_horaire" name="tarif_horaire" class="form-control" 
+                                   step="0.01" min="0" value="{{ devis.tarif_horaire }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="duree_heures">Durée (heures) *</label>
+                            <input type="number" id="duree_heures" name="duree_heures" class="form-control" 
+                                   step="0.5" min="0" value="{{ devis.duree_heures }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="frais_transport">Frais de transport (€)</label>
+                            <input type="number" id="frais_transport" name="frais_transport" class="form-control" 
+                                   step="0.01" min="0" value="{{ devis.frais_transport }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="frais_materiel">Frais de équipement (€)</label>
+                            <input type="number" id="frais_materiel" name="frais_materiel" class="form-control" 
+                                   step="0.01" min="0" value="{{ devis.frais_materiel }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="remise_pourcentage">Remise (%)</label>
+                            <input type="number" id="remise_pourcentage" name="remise_pourcentage" class="form-control" 
+                                   step="0.01" min="0" max="100" value="{{ devis.remise_pourcentage }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="remise_montant">Remise (€)</label>
+                            <input type="number" id="remise_montant" name="remise_montant" class="form-control" 
+                                   step="0.01" min="0" value="{{ devis.remise_montant }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="taux_tva">Taux de TVA (%)</label>
+                            <input type="number" id="taux_tva" name="taux_tva" class="form-control" 
+                                   step="0.01" min="0" value="{{ devis.taux_tva }}">
+                        </div>
+
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Acompte</label>
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="acompte_requis" name="acompte_requis" {% if devis.acompte_requis %}checked{% endif %}>
+                                    <span>Demander un acompte</span>
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="acompte_pourcentage" name="acompte_pourcentage"
+                                           class="form-control" step="0.1" min="0" max="100"
+                                           value="{{ devis.acompte_pourcentage or 0 }}" style="max-width:120px;"
+                                           {% if not devis.acompte_requis %}disabled{% endif %}>
+                                    <span class="text-sm text-gray-600">%</span>
+                                </div>
+                            </div>
+                            <small class="text-muted">Active une ligne d'acompte sur le devis.</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="date_validite">Date de validité</label>
+                            <input type="date" id="date_validite" name="date_validite" class="form-control"
+                                   value="{{ devis.date_validite.strftime('%Y-%m-%d') if devis.date_validite else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Récapitulatif des montants -->
+            <div class="card mt-6">
+                <div class="card-body">
+                    <h3 class="text-xl font-semibold mb-4">Récapitulatif</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Montant HT :</span>
+                            <span class="font-semibold" id="montant_ht_display">0,00 €</span>
+                        </div>
+                        <div class="flex justify-between items-center text-red-600" id="remise_display" style="display: none;">
+                            <span>Remise :</span>
+                            <span class="font-semibold" id="montant_remise_display">0,00 €</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">TVA (<span id="tva_taux_display">0</span>%) :</span>
+                            <span class="font-semibold" id="montant_tva_display">0,00 €</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                            <span class="text-lg font-bold">Total TTC :</span>
+                            <span class="text-lg font-bold text-blue-600" id="montant_ttc_display">0,00 €</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-between items-center mt-6">
+                <a href="{{ url_for('detail_devis', devis_id=devis.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour au devis
+                </a>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Sauvegarder les modifications
+                </button>
+            </div>
+        
+        <div class="finance-form-actions">
+            <a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+        </div>
+
+    </form>
+    </div>
+</div>
+
+<script>
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
+function setAiResult(html) {
+    const container = document.getElementById('ai-assistant-results');
+    container.innerHTML = html;
+}
+
+function getDureeHeures() {
+    const dureeInput = parseFloat(document.getElementById('duree_heures').value || '0');
+    if (dureeInput > 0) return dureeInput;
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = document.getElementById('heure_fin').value;
+    if (!heureDebut || !heureFin) return 4;
+    const debut = new Date('2000-01-01T' + heureDebut);
+    let fin = new Date('2000-01-01T' + heureFin);
+    if (fin <= debut) {
+        fin.setDate(fin.getDate() + 1);
+    }
+    return Math.max(1, Math.round(((fin - debut) / (1000 * 60 * 60)) * 2) / 2);
+}
+
+async function aiSuggestPrice() {
+    const typeEvenement = document.getElementById('ai_type_evenement').value || document.getElementById('prestation_titre').value;
+    const nombreInvites = parseInt(document.getElementById('ai_nombre_invites').value || '100', 10);
+    const date = document.getElementById('date_prestation').value;
+    const dureeHeures = getDureeHeures();
+    if (!date) {
+        setAiResult('<div class="text-orange-600">Renseignez la date de mission pour estimer le tarif.</div>');
+        return;
+    }
+    setAiResult('<div class="text-blue-600">Calcul du tarif conseillé...</div>');
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const response = await fetch('/api/ai/predict-price', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            type_evenement: typeEvenement,
+            nombre_invites: nombreInvites,
+            date,
+            duree_heures: dureeHeures
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.prix_suggere) {
+        const tarifHoraire = dureeHeures > 0 ? (data.prix_suggere / dureeHeures) : data.prix_suggere;
+        document.getElementById('tarif_horaire').value = tarifHoraire.toFixed(2);
+        if (!document.getElementById('duree_heures').value) {
+            document.getElementById('duree_heures').value = dureeHeures.toFixed(1);
+        }
+        setAiResult(`<div class="text-green-700">Tarif conseillé : ${escapeHtml(data.prix_suggere)}€ (≈ ${escapeHtml(tarifHoraire.toFixed(2))}€/h)</div>`);
+    } else {
+        setAiResult(`<div class="text-orange-600">${escapeHtml(data.message || 'Impossible de calculer le tarif')}</div>`);
+    }
+}
+
+async function aiSuggestDj() {
+    const date = document.getElementById('date_prestation').value;
+    const lieu = document.getElementById('lieu').value;
+    const style = document.getElementById('ai_style_musical').value;
+    if (!date) {
+        setAiResult('<div class="text-orange-600">Veuillez renseigner la date de mission.</div>');
+        return;
+    }
+    setAiResult('<div class="text-blue-600">Recherche du meilleur Prestataire...</div>');
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const response = await fetch('/api/ai/suggest-dj', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ date, style_musical: style, localisation: lieu })
+    });
+    const data = await response.json();
+    if (data.success && data.dj) {
+        const djSelect = document.getElementById('dj_id');
+        djSelect.value = data.dj.id;
+        const djName = `${data.dj.nom || ''} ${data.dj.prenom || ''}`.trim();
+        setAiResult(`<div class="text-green-700">Prestataire recommandé : ${escapeHtml(djName)}</div>`);
+    } else {
+        setAiResult(`<div class="text-orange-600">${escapeHtml(data.message || 'Aucun Prestataire disponible')}</div>`);
+    }
+}
+
+async function aiDetectConflicts() {
+    const date = document.getElementById('date_prestation').value;
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = document.getElementById('heure_fin').value;
+    const djId = document.getElementById('dj_id').value || null;
+    if (!date || !heureDebut || !heureFin || !djId) {
+        setAiResult('<div class="text-orange-600">Renseignez date, horaires et Prestataire pour la détection.</div>');
+        return;
+    }
+    setAiResult('<div class="text-blue-600">Analyse des conflits Prestataire...</div>');
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const response = await fetch('/api/ai/detect-conflicts', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            date,
+            heure_debut: heureDebut,
+            heure_fin: heureFin,
+            materiel_ids: [],
+            dj_id: djId ? parseInt(djId, 10) : null,
+            exclude_prestation_id: {{ devis.prestation_id or 'null' }}
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.has_conflicts) {
+        const messages = data.conflicts.map(c => c.message || 'Conflit détecté');
+        const list = messages.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        setAiResult(`
+            <div class="p-3 rounded-lg border border-gray-200">
+                <div class="font-semibold mb-2">Conflits détectés</div>
+                <ul class="list-disc pl-5 text-gray-700">${list}</ul>
+            </div>
+        `);
+    } else if (data.success) {
+        setAiResult('<div class="text-green-700">Aucun conflit détecté.</div>');
+    } else {
+        setAiResult('<div class="text-red-600">Erreur lors de la détection.</div>');
+    }
+}
+
+// Calcul automatique de la durée
+document.getElementById('heure_debut').addEventListener('change', calculerDuree);
+document.getElementById('heure_fin').addEventListener('change', calculerDuree);
+
+function calculerDuree() {
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = document.getElementById('heure_fin').value;
+    
+    if (heureDebut && heureFin) {
+        const debut = new Date('2000-01-01T' + heureDebut);
+        let fin = new Date('2000-01-01T' + heureFin);
+        
+        // Si l'heure de fin est avant l'heure de début, on ajoute un jour
+        if (fin <= debut) {
+            fin.setDate(fin.getDate() + 1);
+        }
+        
+        const dureeMs = fin - debut;
+        const dureeHeures = dureeMs / (1000 * 60 * 60);
+        
+        document.getElementById('duree_heures').value = dureeHeures.toFixed(1);
+        calculerTotaux();
+    }
+}
+
+// Calcul des totaux
+function calculerTotaux() {
+    const tarifHoraire = parseFloat(document.getElementById('tarif_horaire').value) || 0;
+    const dureeHeures = parseFloat(document.getElementById('duree_heures').value) || 0;
+    const fraisTransport = parseFloat(document.getElementById('frais_transport').value) || 0;
+    const fraisMateriel = parseFloat(document.getElementById('frais_materiel').value) || 0;
+    const tauxTva = parseFloat(document.getElementById('taux_tva').value) || 0;
+    const remisePourcentage = parseFloat(document.getElementById('remise_pourcentage').value) || 0;
+    const remiseMontant = parseFloat(document.getElementById('remise_montant').value) || 0;
+    
+    // Calcul du montant HT avant remise
+    let montantHtAvantRemise = (tarifHoraire * dureeHeures) + fraisTransport + fraisMateriel;
+    
+    // Calcul de la remise
+    let remise = 0;
+    if (remisePourcentage > 0) {
+        remise = montantHtAvantRemise * (remisePourcentage / 100);
+    } else if (remiseMontant > 0) {
+        remise = remiseMontant;
+    }
+    
+    // Montant HT après remise
+    const montantHt = Math.max(0, montantHtAvantRemise - remise);
+    
+    // Calcul de la TVA sur le montant HT après remise
+    const montantTva = montantHt * (tauxTva / 100);
+    
+    // Calcul du montant TTC
+    const montantTtc = montantHt + montantTva;
+    
+    // Affichage des résultats
+    document.getElementById('montant_ht_display').textContent = montantHt.toFixed(2) + ' €';
+    document.getElementById('montant_tva_display').textContent = montantTva.toFixed(2) + ' €';
+    document.getElementById('montant_ttc_display').textContent = montantTtc.toFixed(2) + ' €';
+    document.getElementById('tva_taux_display').textContent = tauxTva.toFixed(1);
+    
+    // Affichage de la remise
+    if (remise > 0) {
+        document.getElementById('remise_display').style.display = 'flex';
+        if (remisePourcentage > 0) {
+            document.getElementById('montant_remise_display').textContent = '-' + remise.toFixed(2) + ' € (' + remisePourcentage + '%)';
+        } else {
+            document.getElementById('montant_remise_display').textContent = '-' + remise.toFixed(2) + ' €';
+        }
+    } else {
+        document.getElementById('remise_display').style.display = 'none';
+    }
+}
+
+// Recalculer automatiquement quand les valeurs changent
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = ['tarif_horaire', 'duree_heures', 'frais_transport', 'frais_materiel', 'taux_tva', 'remise_pourcentage', 'remise_montant'];
+    
+    inputs.forEach(function(inputId) {
+        const element = document.getElementById(inputId);
+        if (element) {
+            element.addEventListener('input', calculerTotaux);
+        }
+    });
+    
+    // Calcul initial
+    calculerTotaux();
+});
+
+document.getElementById('acompte_requis').addEventListener('change', function() {
+    const input = document.getElementById('acompte_pourcentage');
+    input.disabled = !this.checked;
+});
+</script>
+{% endblock %}
+
+
+
+
+

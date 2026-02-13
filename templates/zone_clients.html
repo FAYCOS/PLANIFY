@@ -1,0 +1,42 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--wide" %}
+{% block title %}{{ parametres.nom_entreprise if parametres else 'Planify' }} - Zone Clients{% endblock %}
+
+{% block content %}
+<div class="card public-hero">
+    <h1>{{ parametres.nom_entreprise if parametres else 'Planify' }}</h1>
+    <p>Prestataires techniques, équipement et accompagnement sur-mesure pour vos missions.</p>
+    <div class="public-actions" style="margin-top: 16px;">
+        <a href="{{ url_for('reservation_client') }}" class="btn btn-primary">Réservez votre mission</a>
+    </div>
+</div>
+
+<div class="public-grid">
+    <div class="card">
+        <div class="card-body">
+            <h5><i class="fas fa-users"></i> Prestataires experts</h5>
+            <p>Une équipe polyvalente pour des missions terrain, techniques et opérationnelles.</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5><i class="fas fa-box"></i> Équipement & logistique</h5>
+            <p>Ressources adaptées, préparation matérielle et suivi opérationnel sur site.</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5><i class="fas fa-project-diagram"></i> Coordination</h5>
+            <p>Pilotage complet : planification, coordination terrain et suivi dédié.</p>
+        </div>
+    </div>
+</div>
+
+<div class="public-note">
+    © {{ (now() if false) or '2025' }} {{ parametres.nom_entreprise if parametres else 'Planify' }} — Tous droits réservés
+</div>
+<div class="public-note">
+    Vous êtes employé {{ parametres.nom_entreprise if parametres else 'Planify' }} ?
+    <a href="{{ url_for('login') }}" style="text-decoration: underline;">Connectez-vous</a>
+</div>
+{% endblock %}

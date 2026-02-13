@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Restauration - Planify{% endblock %}
+{% block page_title %}Restauration de sauvegarde{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-2xl mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-upload"></i>
+                    Restaurer une sauvegarde
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                    <div class="form-group">
+                        <label class="form-label" for="backup_file">Fichier de sauvegarde</label>
+                        <input type="file" id="backup_file" name="backup_file" class="form-control" 
+                               accept=".db,.db.gz" required>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Sélectionnez un fichier de sauvegarde (.db ou .db.gz)
+                        </p>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                            <div>
+                                <h4 class="font-medium text-yellow-800">Attention</h4>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    Cette action va remplacer toutes les données actuelles par celles de la sauvegarde. 
+                                    Cette opération est irréversible.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Êtes-vous sûr de vouloir restaurer cette sauvegarde ? Toutes les données actuelles seront perdues.')">
+                            <i class="fas fa-upload"></i>
+                            Restaurer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if backups %}
+        <div class="card mt-6">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history"></i>
+                    Sauvegardes disponibles
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    {% for backup in backups %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium">{{ backup.filename }}</div>
+                            <div class="text-sm text-gray-500">
+                                Sauvegarde du {{ backup.date.strftime('%d/%m/%Y %H:%M') }}
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            <i class="fas fa-database"></i>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Scanner QR Code{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-camera"></i> Scanner un QR Code Équipement</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Scannez le QR code d'un équipement avec votre caméra ou sélectionnez un équipement manuellement
+            </div>
+
+            <!-- Choix : Scanner ou Manuel -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <button class="btn btn-primary btn-lg w-100" onclick="activerScanner()">
+                        <i class="fas fa-camera"></i><br>Scanner avec caméra
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-secondary btn-lg w-100" onclick="activerManuel()">
+                        <i class="fas fa-hand-pointer"></i><br>Sélection manuelle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zone de scan vidéo -->
+            <div id="scanner-zone" style="display:none;">
+                <h5>📷 Pointez la caméra vers le QR code</h5>
+                <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
+                <button class="btn btn-danger mt-3" onclick="arreterScanner()">Arrêter la caméra</button>
+            </div>
+
+            <!-- Sélection manuelle -->
+            <div id="manuel-zone" style="display:none;">
+                <h5>📋 Sélection manuelle</h5>
+                <div class="mb-3">
+                    <label>Équipement</label>
+                    <select id="materiel_manuel" class="form-select">
+                        <option value="">-- Choisir un équipement --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label>Site (pour création)</label>
+                    <select id="local_creation" class="form-select">
+                        <option value="">-- Choisir un site --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label>Nom (optionnel)</label>
+                    <input id="nom_creation" class="form-control" type="text" placeholder="Nom équipement">
+                </div>
+                <div class="mb-3">
+                    <label>Numéro de série / code</label>
+                    <input id="sn_creation" class="form-control" type="text" placeholder="Scanner ou saisir le code">
+                </div>
+                <button class="btn btn-success" onclick="ouvrirMaterielManuel()">Ouvrir</button>
+                <button class="btn btn-primary" onclick="creerMaterielDepuisForm()">Créer</button>
+                <button class="btn btn-secondary" onclick="annulerManuel()">Annuler</button>
+            </div>
+
+            <!-- Messages -->
+            <div id="message-zone" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Library HTML5 QR Code Scanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+let html5QrcodeScanner = null;
+
+// Charger la liste des matériels pour sélection manuelle
+fetch('/api/materiels/list')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const select = document.getElementById('materiel_manuel');
+            data.materiels.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m.id;
+                const sn = m.numero_serie ? ` - SN: ${m.numero_serie}` : '';
+                option.textContent = `${m.nom} (${m.categorie}) - ${m.local}${sn}`;
+                select.appendChild(option);
+            });
+        }
+    })
+    .catch(e => console.error('Erreur chargement matériels:', e));
+
+fetch('/api/locals/list')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const select = document.getElementById('local_creation');
+            data.locals.forEach(l => {
+                const option = document.createElement('option');
+                option.value = l.id;
+                option.textContent = l.nom;
+                select.appendChild(option);
+            });
+            const lastLocal = localStorage.getItem('last_local_id');
+            if (lastLocal) {
+                select.value = lastLocal;
+            }
+        }
+    })
+    .catch(e => console.error('Erreur chargement locaux:', e));
+
+function activerScanner() {
+    requestCameraAccess().then(hasAccess => {
+        if (!hasAccess) {
+            return;
+        }
+        document.getElementById('scanner-zone').style.display = 'block';
+        document.getElementById('manuel-zone').style.display = 'none';
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+        
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, // Caméra arrière
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            onScanSuccess,
+            onScanError
+        ).catch(err => {
+            console.error('Erreur démarrage scanner:', err);
+            document.getElementById('message-zone').innerHTML = `
+                <div class="alert alert-danger">
+                    ❌ Impossible d'accéder à la caméra. 
+                    Vérifiez les permissions ou utilisez la sélection manuelle.
+                </div>
+            `;
+        });
+    });
+}
+
+async function requestCameraAccess() {
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+        document.getElementById('message-zone').innerHTML = `
+            <div class="alert alert-warning">
+                ⚠️ La caméra nécessite une connexion HTTPS sur mobile.
+                Utilisez un accès sécurisé ou passez en sélection manuelle.
+            </div>
+        `;
+        return false;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById('message-zone').innerHTML = `
+            <div class="alert alert-danger">
+                ❌ Caméra indisponible sur cet appareil.
+            </div>
+        `;
+        return false;
+    }
+    document.getElementById('message-zone').innerHTML = `
+        <div class="alert alert-info">
+            📷 Demande d'accès à la caméra en cours...
+        </div>
+    `;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (err) {
+        console.error('Permission caméra refusée:', err);
+        document.getElementById('message-zone').innerHTML = `
+            <div class="alert alert-danger">
+                ❌ Permission caméra refusée. Activez l'accès caméra et réessayez.
+            </div>
+        `;
+        return false;
+    }
+}
+
+function arreterScanner() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            document.getElementById('scanner-zone').style.display = 'none';
+        }).catch(err => console.error('Erreur arrêt scanner:', err));
+    }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    console.log('QR Code scanné:', decodedText);
+    
+    // Vérifier si c'est une URL de notre app
+    if (decodedText.includes('/materiels/scan/selection/')) {
+        window.location.href = decodedText;
+        return;
+    }
+    if (decodedText.includes('/materiels/qrcode/scan/')) {
+        const parts = decodedText.split('/materiels/qrcode/scan/');
+        const materielId = parts[1] ? parts[1].split('/')[0] : null;
+        if (materielId) {
+            window.location.href = `/materiels/scan/selection/${materielId}`;
+            return;
+        }
+    }
+
+    // Sinon: lookup par numéro de série / code barre
+    fetch(`/api/materiels/lookup-serial/${encodeURIComponent(decodedText)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/materiels/scan/selection/${data.materiel_id}`;
+            } else {
+                redirectToCreation(decodedText);
+            }
+        })
+        .catch(() => {
+            document.getElementById('message-zone').innerHTML = `
+                <div class="alert alert-danger">
+                    ❌ Erreur de recherche pour ce code
+                </div>
+            `;
+        });
+}
+
+function onScanError(errorMessage) {
+    // Ignorer les erreurs de scan normales
+}
+
+function activerManuel() {
+    document.getElementById('scanner-zone').style.display = 'none';
+    document.getElementById('manuel-zone').style.display = 'block';
+}
+
+function annulerManuel() {
+    document.getElementById('manuel-zone').style.display = 'none';
+}
+
+function redirectToCreation(code) {
+    const localId = document.getElementById('local_creation').value;
+    const nom = document.getElementById('nom_creation').value;
+    const params = new URLSearchParams();
+    params.set('numero_serie', code);
+    if (localId) params.set('local_id', localId);
+    if (nom) params.set('nom', nom);
+    window.location.href = `/materiels/nouveau?${params.toString()}`;
+}
+
+function creerMaterielDepuisForm() {
+    const code = document.getElementById('sn_creation').value.trim();
+    if (!code) {
+        document.getElementById('message-zone').innerHTML = `
+            <div class="alert alert-warning">
+                ⚠️ Entrez un numéro de série pour créer le matériel.
+            </div>
+        `;
+        return;
+    }
+    fetch(`/api/materiels/lookup-serial/${encodeURIComponent(code)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/materiels/scan/selection/${data.materiel_id}`;
+            } else {
+                redirectToCreation(code);
+            }
+        })
+        .catch(() => redirectToCreation(code));
+}
+
+function ouvrirMaterielManuel() {
+    const materielId = document.getElementById('materiel_manuel').value;
+    if (!materielId) {
+        creerMaterielDepuisForm();
+        return;
+    }
+    window.location.href = `/materiels/scan/selection/${materielId}`;
+}
+</script>
+{% endblock %}

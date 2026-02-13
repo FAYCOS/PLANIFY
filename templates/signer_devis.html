@@ -1,0 +1,266 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact signature-shell" %}
+{% block title %}Signature du devis {{ devis.numero }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .signature-pad {
+        position: relative;
+        border: 1px dashed var(--nav-border);
+        border-radius: 16px;
+        background: #fff;
+        overflow: hidden;
+    }
+    #signatureCanvas {
+        width: 100%;
+        height: 240px;
+        display: block;
+    }
+    .signature-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-gray);
+        font-size: 14px;
+        pointer-events: none;
+    }
+    .signature-placeholder.hidden {
+        display: none;
+    }
+    .signature-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 16px;
+    }
+    .signature-checkbox {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: 13px;
+        color: var(--text-gray);
+    }
+    .signature-shell .success-message {
+        display: none;
+    }
+    .signature-shell .success-message.active {
+        display: block;
+    }
+    .signature-shell .error-message {
+        display: none;
+        margin-top: 12px;
+    }
+    .signature-shell .error-message.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card public-hero">
+    <h1>Signature du devis {{ devis.numero }}</h1>
+    <p>Merci de vérifier les informations puis de signer pour valider le devis.</p>
+</div>
+
+<div class="context-card">
+    <div class="context-card-header">
+        <div class="context-title">Récapitulatif</div>
+    </div>
+    <div class="context-row"><span>Client</span><strong>{{ devis.client_nom }}</strong></div>
+    <div class="context-row"><span>Mission</span><strong>{{ devis.prestation_titre }}</strong></div>
+    <div class="context-row"><span>Date</span><strong>{{ devis.date_prestation.strftime('%d/%m/%Y') }}</strong></div>
+    <div class="context-row"><span>Montant</span><strong>{{ "%.2f"|format(devis.montant_ttc) }} €</strong></div>
+</div>
+
+<div class="card" id="signatureForm">
+    <div class="card-body">
+        <h2 style="margin-bottom: 8px;">Signature électronique</h2>
+        <p style="color: var(--text-gray); margin-bottom: 16px;">Signez dans le cadre ci-dessous.</p>
+
+        <div class="signature-pad">
+            <canvas id="signatureCanvas" width="720" height="300"></canvas>
+            <div class="signature-placeholder" id="canvasPlaceholder">Signez ici</div>
+        </div>
+
+        <div class="signature-actions">
+            <button type="button" class="btn btn-outline-secondary" onclick="clearSignature()">Effacer</button>
+            <button type="button" class="btn btn-primary" onclick="submitSignature()" id="submitBtn" disabled>Signer et valider le devis</button>
+        </div>
+
+        <div class="signature-checkbox" style="margin-top: 12px;">
+            <input type="checkbox" id="acceptTerms">
+            <label for="acceptTerms">
+                J'accepte les termes et conditions de ce devis. Je comprends que cette signature électronique a la même valeur légale qu'une signature manuscrite.
+            </label>
+        </div>
+
+        <div class="alert alert-error error-message" id="errorMessage"></div>
+    </div>
+</div>
+
+<div class="card success-message" id="successMessage">
+    <div class="card-body">
+        <div class="public-status success">
+            <div class="public-status-icon"><i class="fa-solid fa-check"></i></div>
+            <h2>Devis signé avec succès</h2>
+            <p>Votre signature a été enregistrée. Vous recevrez un email de confirmation avec le devis signé sous peu.</p>
+        </div>
+
+        {% if devis.acompte_montant and devis.acompte_montant > 0 and parametres and parametres.stripe_enabled and parametres.stripe_secret_key %}
+        <div class="context-card" style="margin-top: 18px;">
+            <div class="context-card-header">
+                <div class="context-title">Acompte requis</div>
+            </div>
+            <p><strong>Un acompte de {{ "%.2f"|format(devis.acompte_montant) }}€ est requis pour valider ce devis.</strong></p>
+            <div class="public-actions" style="justify-content:flex-start; margin-top: 12px;">
+                <a href="{{ url_for('stripe_bp.pay_quote', quote_id=devis.id, token=devis.signature_token) }}" class="btn btn-primary">Payer l'acompte maintenant</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    const placeholder = document.getElementById('canvasPlaceholder');
+    const acceptCheckbox = document.getElementById('acceptTerms');
+    const submitBtn = document.getElementById('submitBtn');
+
+    let isDrawing = false;
+    let hasSignature = false;
+
+    ctx.strokeStyle = '#1d1d1f';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    acceptCheckbox.addEventListener('change', updateSubmitButton);
+
+    function updateSubmitButton() {
+        submitBtn.disabled = !acceptCheckbox.checked || !hasSignature;
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    canvas.addEventListener('touchstart', handleTouchStart);
+    canvas.addEventListener('touchmove', handleTouchMove);
+    canvas.addEventListener('touchend', stopDrawing);
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        placeholder.classList.add('hidden');
+        hasSignature = true;
+        updateSubmitButton();
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    function handleTouchStart(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        placeholder.classList.add('hidden');
+        hasSignature = true;
+        updateSubmitButton();
+    }
+
+    function handleTouchMove(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+    }
+
+    function clearSignature() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        placeholder.classList.remove('hidden');
+        hasSignature = false;
+        updateSubmitButton();
+    }
+
+    async function submitSignature() {
+        if (!hasSignature) {
+            showError('Veuillez signer le document');
+            return;
+        }
+
+        if (!acceptCheckbox.checked) {
+            showError('Veuillez accepter les termes et conditions');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Envoi en cours...';
+
+        const signatureData = canvas.toDataURL('image/png');
+
+        try {
+            const tokenMeta = document.querySelector('meta[name="public-api-token"]');
+            const publicToken = tokenMeta ? tokenMeta.getAttribute('content') : '';
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (publicToken) {
+                headers['X-Public-Token'] = publicToken;
+            }
+            const response = await fetch('/api/signer-devis/{{ devis.signature_token }}', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    signature: signatureData
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('signatureForm').style.display = 'none';
+                document.getElementById('successMessage').classList.add('active');
+            } else {
+                showError(data.message || 'Une erreur est survenue');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Signer et valider le devis';
+            }
+        } catch (error) {
+            showError('Erreur de connexion. Veuillez réessayer.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Signer et valider le devis';
+        }
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.textContent = message;
+        errorDiv.classList.add('active');
+        setTimeout(() => {
+            errorDiv.classList.remove('active');
+        }, 5000);
+    }
+</script>
+{% endblock %}

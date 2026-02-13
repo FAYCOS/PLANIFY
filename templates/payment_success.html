@@ -1,0 +1,18 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact" %}
+{% block title %}Paiement réussi{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="public-status success">
+            <div class="public-status-icon"><i class="fa-solid fa-check"></i></div>
+            <h1>Paiement réussi</h1>
+            <p>Merci pour votre paiement. La transaction a été validée avec succès.</p>
+            <div class="public-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Retour à l'accueil</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}Disponibilités Équipement - Monitoring{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- En-tête avec titre et bouton refresh -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-chart-line"></i> Disponibilite équipement</h2>
+            <p class="text-muted">Vue temps reel par site, avec repartition instantanee</p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-primary btn-lg" onclick="location.reload()" id="btnRefresh">
+                <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+            <div class="form-check form-switch d-inline-block ms-2">
+                <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                <label class="form-check-label" for="autoRefresh">
+                    Auto-refresh (30s)
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timestamp de dernière mise à jour -->
+    <div class="alert alert-info" id="timestampAlert" style="display: none;">
+        <i class="fas fa-clock"></i> Dernière mise à jour : <strong id="timestamp">-</strong>
+    </div>
+
+    <!-- Spinner de chargement -->
+    <div class="text-center my-5" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="mt-3 text-muted">Chargement des disponibilités...</p>
+    </div>
+
+    <!-- Zone d'affichage des résultats -->
+    <div id="resultsContainer" style="display: none;">
+        <!-- Les tableaux seront générés dynamiquement ici -->
+    </div>
+
+    <!-- Message d'erreur -->
+    <div class="alert alert-danger" id="errorAlert" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i> <span id="errorMessage"></span>
+    </div>
+</div>
+
+<style>
+    .local-card {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 14px;
+        margin-bottom: 28px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        background: #ffffff;
+    }
+    
+    .local-header {
+        background: linear-gradient(135deg, #0b84ff 0%, #0f5bd6 100%);
+        color: white;
+        padding: 20px 24px;
+    }
+    
+    .stats-row {
+        background: #f7f9fc;
+        padding: 16px 10px;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+    
+    .stat-box {
+        text-align: center;
+        padding: 10px;
+    }
+    
+    .stat-box .stat-value {
+        font-size: 1.7rem;
+        font-weight: 700;
+        display: block;
+    }
+    
+    .stat-box .stat-label {
+        font-size: 0.85rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 6px;
+        font-weight: 500;
+    }
+
+    .stat-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        display: inline-block;
+    }
+    
+    .badge-disponible,
+    .badge-prestation,
+    .badge-maintenance,
+    .badge-hors-service {
+        color: #0f172a;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+    }
+
+    .badge-disponible { background-color: rgba(16, 185, 129, 0.16); }
+    .badge-prestation { background-color: rgba(251, 146, 60, 0.18); }
+    .badge-maintenance { background-color: rgba(239, 68, 68, 0.18); }
+    .badge-hors-service { background-color: rgba(107, 114, 128, 0.22); }
+    
+    /* En-tête des colonnes (Flexbox) */
+    .materiel-header {
+        display: flex;
+        background: #0f172a;
+        color: white;
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    /* Liste des matériels */
+    .materiels-list {
+        background: white;
+    }
+    
+    /* Ligne de matériel (Flexbox) */
+    .materiel-row-flex {
+        display: flex;
+        padding: 12px 10px;
+        border-bottom: 1px solid #e9ecef;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    
+    .materiel-row-flex:hover {
+        background-color: #f5f7fb;
+    }
+    
+    .materiel-row-flex:last-child {
+        border-bottom: none;
+    }
+    
+    /* Colonnes (largeurs fixes) */
+    .materiel-col-name {
+        flex: 0 0 23%;
+        padding-right: 10px;
+    }
+    
+    .materiel-col-category {
+        flex: 0 0 11%;
+        padding-right: 10px;
+    }
+    
+    .materiel-col-progress {
+        flex: 0 0 22%;
+        padding-right: 10px;
+    }
+    
+    .materiel-col-dispo {
+        flex: 0 0 9%;
+        text-align: center;
+    }
+    
+    .materiel-col-presta {
+        flex: 0 0 10%;
+        text-align: center;
+    }
+    
+    .materiel-col-maint {
+        flex: 0 0 9%;
+        text-align: center;
+    }
+
+    .materiel-col-hs {
+        flex: 0 0 9%;
+        text-align: center;
+    }
+
+    .materiel-col-total {
+        flex: 0 0 7%;
+        text-align: center;
+    }
+    
+    /* Message "Aucun matériel" */
+    .no-materiel {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+        font-size: 1.1rem;
+    }
+    
+    .progress-custom {
+        height: 22px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #e9eef7;
+    }
+    
+    .progress-bar-disponible {
+        background-color: #28a745;  /* VERT */
+    }
+    
+    .progress-bar-prestation {
+        background-color: #ff8c00;  /* ORANGE */
+    }
+    
+    .progress-bar-maintenance {
+        background-color: #dc3545;  /* ROUGE */
+    }
+
+    .progress-bar-hors-service {
+        background-color: #6c757d;  /* GRIS */
+    }
+</style>
+
+<script>
+let autoRefreshInterval = null;
+
+// Activer l'auto-refresh au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Charger les données au chargement
+    chargerDisponibilites();
+    
+    // Activer l'auto-refresh par défaut
+    toggleAutoRefresh();
+    
+    // Gérer le switch auto-refresh
+    document.getElementById('autoRefresh').addEventListener('change', toggleAutoRefresh);
+});
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        // Activer l'auto-refresh toutes les 30 secondes (recharge complète)
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        autoRefreshInterval = setInterval(() => {
+            console.log('Auto-refresh: rechargement de la page...');
+            location.reload();
+        }, 30000);
+    } else {
+        // Désactiver l'auto-refresh
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+}
+
+async function chargerDisponibilites() {
+    console.log('Chargement des disponibilités...');
+    
+    const spinner = document.getElementById('loadingSpinner');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const errorAlert = document.getElementById('errorAlert');
+    const timestampAlert = document.getElementById('timestampAlert');
+    
+    // Afficher spinner
+    spinner.style.display = 'block';
+    resultsContainer.style.display = 'none';
+    errorAlert.style.display = 'none';
+    
+    try {
+        console.log('Appel API /api/materiels/disponibilites...');
+        const response = await fetch('/api/materiels/disponibilites');
+        console.log('Réponse reçue:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Non authentifie. Veuillez vous reconnecter.');
+            } else if (response.status === 403) {
+                throw new Error('Acces refuse. Seuls les admins et managers peuvent voir cette page.');
+            } else {
+                throw new Error(`Erreur HTTP: ${response.status} ${response.statusText}`);
+            }
+        }
+        
+        const data = await response.json();
+        console.log('Donnees recues:', data);
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Erreur inconnue');
+        }
+        
+        // Afficher le timestamp
+        document.getElementById('timestamp').textContent = data.timestamp;
+        timestampAlert.style.display = 'block';
+        
+        // Générer les tableaux
+        console.log('Generation des tableaux...');
+        afficherResultats(data.locaux);
+        
+        // Afficher les résultats
+        spinner.style.display = 'none';
+        resultsContainer.style.display = 'block';
+        console.log('Affichage termine');
+        
+    } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('errorMessage').textContent = error.message;
+        errorAlert.style.display = 'block';
+        spinner.style.display = 'none';
+    }
+}
+
+function afficherResultats(locaux) {
+    console.log('Affichage de', locaux.length, 'locaux');
+    const container = document.getElementById('resultsContainer');
+    
+    if (!locaux || locaux.length === 0) {
+        container.innerHTML = '<div class="alert alert-warning"><i class="fas fa-info-circle"></i> Aucun local trouve.</div>';
+        return;
+    }
+    
+    let html = '';
+    
+    locaux.forEach(local => {
+        const stats = local.stats;
+        
+        html += `
+            <div class="local-card">
+                <!-- En-tête du local -->
+                <div class="local-header">
+                    <h3 class="mb-2">
+                        <i class="fas fa-warehouse"></i> ${local.local_nom}
+                    </h3>
+                    ${local.local_adresse ? `<p class="mb-0 opacity-75"><i class="fas fa-map-marker-alt"></i> ${local.local_adresse}</p>` : ''}
+                </div>
+                
+                <!-- Statistiques globales -->
+                <div class="stats-row">
+                    <div class="row">
+                        <div class="col-md-2 col-6">
+                            <div class="stat-box">
+                                <span class="stat-value text-success">${stats.total_disponible}</span>
+                                <span class="stat-label"><span class="stat-dot" style="background:#10b981;"></span>Disponible</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: #ff8c00;">${stats.total_en_prestation}</span>
+                                <span class="stat-label"><span class="stat-dot" style="background:#fb923c;"></span>En prestation</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="stat-box">
+                                <span class="stat-value text-danger">${stats.total_maintenance}</span>
+                                <span class="stat-label"><span class="stat-dot" style="background:#ef4444;"></span>Maintenance</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="stat-box">
+                                <span class="stat-value text-muted">${stats.total_hors_service}</span>
+                                <span class="stat-label"><span class="stat-dot" style="background:#6b7280;"></span>Hors service</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="stat-box">
+                                <span class="stat-value text-muted">${stats.total_materiels}</span>
+                                <span class="stat-label"><span class="stat-dot" style="background:#0f172a;"></span>Total materiels</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- En-tête des colonnes (Flexbox) -->
+                <div class="materiel-header">
+                    <div class="materiel-col-name">Équipement</div>
+                    <div class="materiel-col-category">Catégorie</div>
+                    <div class="materiel-col-progress">Répartition</div>
+                    <div class="materiel-col-dispo">Disponible</div>
+                    <div class="materiel-col-presta">En prestation</div>
+                    <div class="materiel-col-maint">Maintenance</div>
+                    <div class="materiel-col-hs">Hors service</div>
+                    <div class="materiel-col-total">Total</div>
+                </div>
+                
+                <!-- Liste des matériels (Flexbox) -->
+                <div class="materiels-list">
+        `;
+        
+        if (local.materiels.length === 0) {
+            html += `
+                <div class="no-materiel">
+                    <i class="fas fa-box-open"></i> Aucun materiel dans ce local
+                </div>
+            `;
+        } else {
+            local.materiels.forEach(materiel => {
+                const total = materiel.quantite_totale;
+                const dispo = materiel.disponible;
+                const presta = materiel.en_prestation;
+                const maintenance = materiel.maintenance;
+                const horsService = materiel.hors_service;
+                
+                // Calculer les pourcentages pour la barre de progression
+                const dispoPct = total > 0 ? (dispo / total * 100) : 0;
+                const prestaPct = total > 0 ? (presta / total * 100) : 0;
+                const maintenancePct = total > 0 ? (maintenance / total * 100) : 0;
+                const horsServicePct = total > 0 ? (horsService / total * 100) : 0;
+                
+                html += `
+                    <div class="materiel-row-flex">
+                        <div class="materiel-col-name">
+                            <strong>${materiel.nom}</strong>
+                            ${materiel.statut !== 'disponible' ? `<br><small class="text-muted">Statut: ${materiel.statut}</small>` : ''}
+                        </div>
+                        <div class="materiel-col-category">
+                            <span class="badge bg-secondary">${materiel.categorie}</span>
+                        </div>
+                        <div class="materiel-col-progress">
+                            <div class="progress progress-custom">
+                                ${dispo > 0 ? `<div class="progress-bar progress-bar-disponible" style="width: ${dispoPct}%" title="Disponible: ${dispo}"></div>` : ''}
+                                ${presta > 0 ? `<div class="progress-bar progress-bar-prestation" style="width: ${prestaPct}%" title="En mission: ${presta}"></div>` : ''}
+                                ${maintenance > 0 ? `<div class="progress-bar progress-bar-maintenance" style="width: ${maintenancePct}%" title="Maintenance: ${maintenance}"></div>` : ''}
+                                ${horsService > 0 ? `<div class="progress-bar progress-bar-hors-service" style="width: ${horsServicePct}%" title="Hors service: ${horsService}"></div>` : ''}
+                            </div>
+                        </div>
+                        <div class="materiel-col-dispo">
+                            <span class="badge-disponible">${dispo}</span>
+                        </div>
+                        <div class="materiel-col-presta">
+                            <span class="badge-prestation">${presta}</span>
+                        </div>
+                        <div class="materiel-col-maint">
+                            <span class="badge-maintenance">${maintenance}</span>
+                        </div>
+                        <div class="materiel-col-hs">
+                            <span class="badge-hors-service">${horsService}</span>
+                        </div>
+                        <div class="materiel-col-total">
+                            <strong>${total}</strong>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}

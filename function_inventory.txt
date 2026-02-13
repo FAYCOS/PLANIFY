@@ -1,0 +1,361 @@
+88:def utcnow():
+93:def _get_encryption_fernet():
+105:def encryption_ready():
+108:def encrypt_sensitive(value):
+123:def decrypt_sensitive(value):
+141:def mask_sensitive(value, show_last=4):
+149:def get_stripe_secret(parametres):
+154:def get_rib_values(parametres):
+210:def _is_rate_limited(endpoint, ip_address, path=None):
+227:def _is_same_origin(origin):
+237:def get_public_api_token(parametres=None):
+263:def ensure_public_api_token(parametres):
+269:def validate_public_api_request():
+312:def get_device_id():
+397:def valider_email(email):
+411:def valider_telephone(telephone):
+426:def valider_siret(siret):
+439:def valider_siren(siren):
+448:def valider_montant(montant, min_value=0, max_value=None):
+463:def valider_date(date_str, format='%Y-%m-%d'):
+474:def valider_periode(date_debut_str, date_fin_str):
+487:def sanitize_string(text, max_length=None):
+511:    def __init__(self):
+515:    def handle_starttag(self, tag, attrs):
+536:    def handle_endtag(self, tag):
+541:    def handle_data(self, data):
+545:    def handle_entityref(self, name):
+548:    def handle_charref(self, name):
+551:def _is_safe_href(value):
+555:def sanitize_rich_html(raw_html):
+564:def normalize_whitespace(text):
+572:def normalize_email(email):
+578:def normalize_telephone(telephone):
+584:def parse_date_field(value, label, errors, required=True, fmt='%Y-%m-%d'):
+596:def parse_time_field(value, label, errors, required=True, fmt='%H:%M'):
+608:def parse_float_field(value, label, errors, required=False, min_value=None, max_value=None, default=None):
+627:def validate_required_field(value, label, errors):
+632:def validate_date_time_range(date_debut, date_fin, heure_debut, heure_fin, errors):
+640:def validate_time_range(heure_debut, heure_fin, errors):
+645:def compute_duration_hours(heure_debut, heure_fin):
+655:def compute_reservation_end(date_souhaitee, heure_souhaitee, duree_heures):
+670:def _get_materiel_logistique_buffers(parametres=None):
+687:def _build_datetime_range(date_debut, date_fin, heure_debut, heure_fin):
+697:def locked_transaction():
+710:def _generate_unique_serial(prefix="AUTO"):
+718:def _resolve_client_contact(prestation):
+730:def _client_lookup_key(email, telephone, nom):
+740:def get_or_create_client(nom, email=None, telephone=None, categories=None, notes=None):
+791:def backfill_clients():
+827:def _create_or_get_rating_request(prestation, client_email, client_nom):
+847:def _send_rating_email(prestation, rating, base_url):
+868:def _get_rating_stats_for_dj(dj_id):
+882:def _get_rating_stats_for_technicien(technicien_id):
+896:def check_staff_availability(staff_type, staff_id, date_debut, date_fin, heure_debut, heure_fin, exclude_prestation_id=None):
+934:def _cache_get(address):
+943:def _cache_set(address, data):
+948:def build_full_address(adresse, code_postal=None, ville=None):
+952:def geocode_address(address, provider=None, contact_email=None):
+968:    def _open_with_context(req):
+1040:def haversine_km(lat1, lon1, lat2, lon2):
+1051:def route_distance_km(lat1, lon1, lat2, lon2):
+1060:        def _open_route(req):
+1096:def compute_distance_km(lat1, lon1, lat2, lon2):
+1103:def compute_indemnite_km(distance_km, parametres):
+1116:def get_google_maps_api_key():
+1129:def get_company_coordinates(parametres):
+1152:def validate_image_upload(file, allowed_extensions):
+1176:def validate_document_upload(file, allowed_extensions, max_size_mb=5):
+1211:def valider_formulaire_client(form_data):
+1235:def require_login():
+1319:def apply_security_controls():
+1347:def is_db_ready():
+1350:def is_devis_locked(devis):
+1354:def is_facture_locked(facture):
+1362:def validate_signature_payload(signature_data):
+1389:def generate_document_number(prefix, year=None, width=4):
+1434:    def log_action(action, entite_type, entite_id, entite_nom, details=None, user_id=None):
+1503:    def __repr__(self):
+1562:    def calculer_prix(self, duree_heures, is_weekend=False, is_jour_ferie=False, is_nuit=False, distance_km=0):
+1650:    def __repr__(self):
+1653:    def has_role(self, role):
+1657:    def can_manage_users(self):
+1661:    def can_create_prestations(self):
+1665:    def can_manage_materiel(self):
+1669:    def can_view_all_prestations(self):
+1673:    def can_edit_prestations(self):
+1698:    def email(self):
+1702:    def telephone(self):
+1706:    def prenom(self):
+1712:    def specialite_musicale(self):
+1716:    def specialites(self):
+1803:    def __repr__(self):
+1887:    def synchroniser_frais_materiel(self):
+1902:    def calculer_acompte(self):
+1913:    def calculer_totaux(self):
+1952:def build_devis_template(devis, parametres):
+2063:    def total_avoirs(self):
+2071:    def montant_du_net(self):
+2075:    def montant_restant(self):
+2080:    def est_payee(self):
+2084:    def est_en_retard(self):
+2089:    def valider_paiement(self, montant):
+2106:    def ajouter_paiement(self, montant):
+2124:    def synchroniser_frais_materiel(self):
+2139:    def calculer_acompte(self):
+2151:    def montant_solde(self):
+2157:    def calculer_totaux(self):
+2196:    def __repr__(self):
+2218:    def __repr__(self):
+2276:    def est_paye(self):
+2281:    def est_rembourse(self):
+2286:    def montant_net(self):
+2290:    def __repr__(self):
+2304:    def __repr__(self):
+2317:    def __repr__(self):
+2369:    def est_validee(self):
+2373:    def peut_etre_confirmee(self):
+2376:    def __repr__(self):
+2396:    def est_disponible(self, date_debut=None, date_fin=None, heure_debut=None, heure_fin=None):
+2432:    def generer_qr_code_url(self):
+2437:    def mettre_en_maintenance(self):
+2442:    def sortir_de_maintenance(self):
+2449:    def mettre_a_jour_statut_auto(self):
+2495:def _validate_materiel_presta(mapper, connection, target):
+2569:    def materiels(self):
+2579:    def valider_transition_statut(self, nouveau_statut):
+2626:    def changer_statut(self, nouveau_statut):
+2708:def _should_exclude_field(field_name):
+2713:def _serialize_value(value):
+2725:def _model_to_payload(target):
+2737:def _get_request_user_id():
+2742:def _log_sync_change(connection, target, operation, changed_fields=None):
+2766:def _on_after_insert(mapper, connection, target):
+2769:def _on_after_update(mapper, connection, target):
+2780:def _on_after_delete(mapper, connection, target):
+2785:def register_sync_listeners():
+2803:def _mark_plf_dirty_after_commit(session):
+2807:def login_required(f):
+2810:    def decorated_function(*args, **kwargs):
+2817:def role_required(roles):
+2819:    def decorator(f):
+2821:        def decorated_function(*args, **kwargs):
+2840:def get_current_user():
+2859:def get_or_404(model, ident):
+2920:def _get_active_terminology_profile():
+2936:def _build_terminology_replacements(profile):
+2950:def apply_terminology_filter(text):
+2958:        def _repl(match):
+2971:def role_label_filter(role):
+2980:def _load_custom_fields_definitions(raw_value):
+3014:def get_custom_fields_definitions(parametres):
+3018:def extract_custom_fields_from_form(definitions, form_data):
+3031:def parse_custom_fields_values(raw_value):
+3040:def build_custom_fields_display(definitions, values):
+3056:def _apply_terminology_to_payload(payload):
+3070:def apply_terminology_to_json_response(response):
+3083:def inject_current_user():
+3107:def check_materiel_availability(materiel_id, date_debut, date_fin, heure_debut, heure_fin, prestation_id=None):
+3124:def update_materiel_status(materiel_id, commit=True):
+3135:def is_materiel_available_at_time(materiel_id, date, heure_debut, heure_fin):
+3152:def update_all_materiels_status():
+3158:def get_materiel_status_at_time(materiel_id, date, heure_debut, heure_fin):
+3188:def verifier_disponibilite_materiel(materiel_id, quantite_demandee, date_debut, date_fin, 
+3456:def calculer_cout_materiel_reel(prestation_id=None, devis_id=None, reservation_id=None):
+3511:def sync_documents_for_prestation(prestation_id):
+3530:def index():
+3549:def check_username():
+3569:def login():
+3610:def initialisation():
+3658:def verifier_code():
+3698:def renvoyer_code():
+3719:def finaliser_initialisation():
+3833:def first_setup():
+3841:def profil():
+3925:def logout():
+3934:def register():
+3984:def _get_groq_status():
+4034:def admin_dashboard():
+4071:def ia_hub():
+4088:def ia_update_key():
+4130:def manager_dashboard():
+4155:def dj_dashboard():
+4184:def technicien_dashboard():
+4206:def users():
+4214:def edit_user(user_id):
+4259:def toggle_user(user_id):
+4283:def devis():
+4290:def nouveau_devis():
+4486:def detail_devis(devis_id):
+4503:def mettre_a_jour_contenu_devis(devis_id):
+4518:def modifier_devis(devis_id):
+4672:def supprimer_devis(devis_id):
+4697:def changer_statut_devis(devis_id):
+4725:def parametres():
+4751:def personnalisation():
+4763:def modifier_parametres():
+5038:def modifier_personnalisation():
+5102:def backup_page():
+5111:def create_backup():
+5128:def download_backup(filename):
+5146:def delete_backup(filename):
+5162:def restore_backup(filename):
+5186:def export_parametres():
+5246:def export_complet():
+5272:def export_statistiques():
+5297:def devis_pdf(devis_id):
+5352:def devis_choix_tva(devis_id):
+5361:def export_prestations():
+5377:def export_prestations_csv():
+5408:def export_materiels():
+5424:def export_djs():
+5441:def export_devis():
+5458:def reservation_client():
+5463:def zone_clients():
+5468:def reservation_success():
+5474:def send_reservation_confirmation_email(reservation):
+5514:def notify_managers_new_reservation(reservation):
+5558:def notify_dj_new_reservation(reservation):
+5620:def send_dj_notification_for_devis(devis, dj, prestation, parametres):
+5678:def build_signature_url(signature_token):
+5684:def ensure_facture_payment_token(facture):
+5693:def send_devis_to_client(devis, include_tva=None):
+5792:def _envoyer_devis_email(devis, include_tva=True):
+5888:def page_signature_devis(token):
+5902:def api_signer_devis(token):
+5964:def notifier_signature_devis(devis):
+6035:def rate_prestation(token):
+6122:def chat_welcome():
+6148:def chat_message():
+6188:def chat_recommendations(conversation_id):
+6213:def chat_reset(conversation_id):
+6240:def api_reservation():
+6400:def reservations():
+6420:def detail_reservation(reservation_id):
+6437:def valider_reservation(reservation_id):
+6570:def assigner_dj_reservation(reservation_id):
+6596:def assigner_materiel_reservation(reservation_id):
+6694:def valider_reservation_dj(reservation_id):
+6852:def confirmer_reservation(reservation_id):
+6933:def facturation():
+6945:    def _apply_date_range(query, field):
+7077:def factures():
+7127:def paiements():
+7181:def upload_paiement_justificatif(paiement_id):
+7215:def produits():
+7251:def clients():
+7290:def nouveau_client():
+7333:def modifier_client(client_id):
+7377:def client_detail(client_id):
+7393:def nouvelle_facture():
+7581:def detail_facture(facture_id):
+7593:def creer_avoir(facture_id):
+7672:def modifier_facture(facture_id):
+7863:def supprimer_facture(facture_id):
+7884:def changer_statut_facture(facture_id):
+7914:def enregistrer_paiement(facture_id):
+8004:def valider_paiement_facture(facture_id, paiement_id):
+8050:def rejeter_paiement_facture(facture_id, paiement_id):
+8082:def facture_pdf(facture_id):
+8105:def export_factures():
+8122:def creer_facture_depuis_prestation():
+8132:def envoyer_facture_email(facture_id):
+8244:def envoyer_devis_email(devis_id):
+8279:def envoyer_devis_apres_edition(devis_id):
+8318:def creer_facture_depuis_prestation_id(prestation_id):
+8436:def export_rapport_complet():
+8457:def rapports_avances():
+8518:    def calculer_pourcentage_evolution(actuel, precedent):
+8583:def materiel_calendrier(materiel_id):
+8609:def update_all_materiel_status():
+8621:def prestations():
+8678:def detail_prestation(prestation_id):
+8726:def modifier_prestation(prestation_id):
+9040:def annuler_prestation(prestation_id):
+9145:def envoyer_notifications_annulation(prestation, client_email, dj_email, nb_devis, nb_factures):
+9235:def supprimer_prestation(prestation_id):
+9261:def nouvelle_prestation():
+9485:def materiels():
+9536:def materiels_disponibilites():
+9543:def api_materiels_disponibilites():
+9672:def nouveau_materiel():
+9733:def modifier_materiel(materiel_id):
+9803:def supprimer_materiel(materiel_id):
+9843:def changer_statut_materiel(materiel_id):
+9866:def scan_materiel(materiel_id):
+9902:def selection_scan_materiel(materiel_id):
+9909:def fiche_materiel(materiel_id):
+9923:def api_materiel_lookup_serial(serial):
+9949:def sortie_materiel_api():
+10080:def retour_materiel_api():
+10196:def _valider_sortie_materiel(materiel, prestation, quantite):
+10249:def _valider_retour_materiel(materiel, prestation, quantite):
+10286:def validate_materiel_movement():
+10362:def _normalize_movement_items(items):
+10387:def sortie_materiel_batch_api():
+10465:def retour_materiel_batch_api():
+10564:def voir_qrcode_materiel(materiel_id):
+10571:def qrcode_materiel_image(materiel_id):
+10599:def scanner_qrcode():
+10606:def materiel_mouvements():
+10663:def api_materiels_list():
+10683:def api_materiel_detail(materiel_id):
+10704:def api_locals_list():
+10721:def api_create_materiel_from_code():
+10753:def generer_qrcodes_pdf():
+10821:def check_materiel_disponibilite_reservation(reservation_id):
+10921:def locals():
+10939:def nouveau_local():
+10961:def modifier_local(local_id):
+10981:def supprimer_local(local_id):
+11001:def affichage_local(local_id):
+11021:def api_materiels_local(local_id):
+11063:def djs():
+11073:def nouveau_dj():
+11096:def modifier_dj(dj_id):
+11117:def supprimer_dj(dj_id):
+11137:def detail_dj(dj_id):
+11146:def calendrier():
+11187:def rapports():
+11244:def api_stats():
+11264:def recherche():
+11317:def api_materiels_available():
+11388:    def get_local_coords(local):
+11482:def api_rapports_data():
+11528:# def export_clients():
+11603:def api_recherche():
+11659:def restore():
+11689:def notifications():
+11723:def api_notifications():
+11756:def scanner_page():
+11776:def ensure_materiel_schema():
+11798:def ensure_parametres_schema():
+11935:def ensure_prestations_schema():
+11971:def ensure_devis_schema():
+12054:def ensure_factures_schema():
+12098:def ensure_avoirs_schema():
+12124:def ensure_paiements_schema():
+12194:def ensure_clients_schema():
+12230:def ensure_client_contacts_schema():
+12264:def ensure_document_sequences_schema():
+12281:def ensure_sync_config():
+12308:def _is_https_url(url):
+12311:def _sync_get_access_token(cfg):
+12347:def _build_sync_payload(changes, device_id):
+12376:def _sync_push_changes(cfg):
+12435:def _sync_once():
+12463:def start_sync_service():
+12469:    def _loop():
+12488:def stop_sync_service():
+12491:def init_db():
+12520:def _start_sync_on_request():
+12532:def find_available_port(start_port=5000, max_port=5100):
+12548:def uploaded_files(filename):
+12554:def _sanitize_db_name(name):
+12558:def _activate_db(sqlite_path, plf_path):
+12574:def _encrypt_active_db(password):
+12580:def mark_plf_dirty():
+12588:def start_plf_autosave_service():
+12592:    def _loop():
+12610:def _finalize_plf_on_exit():
+12619:def _load_plf_to_temp(plf_path, password):

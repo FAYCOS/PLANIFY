@@ -1,0 +1,18 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact" %}
+{% block title %}Réserver une mission{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="public-status">
+            <div class="public-status-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+            <h1>Formulaire mis à jour</h1>
+            <p>Le formulaire de réservation a été modernisé. Utilisez la nouvelle version pour une expérience optimale.</p>
+            <div class="public-actions">
+                <a href="{{ url_for('reservation_client') }}" class="btn btn-primary">Accéder au nouveau formulaire</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

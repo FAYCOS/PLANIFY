@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Clients - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-header">
+        <div>
+            <p class="finance-eyebrow">Ventes</p>
+            <h1>Clients</h1>
+            <p class="finance-subtitle">Suivi des clients et de leurs documents.</p>
+        </div>
+        <div class="finance-actions">
+            <button class="btn btn-outline-primary" type="button" disabled>
+                <i class="fas fa-download"></i> Télécharger
+            </button>
+            <button class="btn btn-outline-secondary" type="button" disabled>
+                <i class="fas fa-upload"></i> Importer
+            </button>
+            <a href="{{ url_for('nouveau_client') }}" class="btn btn-primary">Nouveau client</a>
+        </div>
+    </div>
+
+    <div class="finance-card finance-filters-card">
+        <form method="GET" class="finance-filters-form" data-no-csrf="true">
+            <div class="finance-search">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" class="form-control" placeholder="Rechercher..." value="{{ filters.q or '' }}">
+            </div>
+            <button class="btn btn-sm btn-primary" type="submit">Rechercher</button>
+            <a href="{{ url_for('clients') }}" class="btn btn-sm btn-outline-secondary">Réinitialiser</a>
+        </form>
+    </div>
+
+    <div class="finance-card finance-table-card">
+        <div class="table-responsive">
+            <table class="table finance-table scan-aligned-table scan-cols-7" data-no-contextbox="true">
+                <thead>
+                    <tr>
+                        <th style="width: 48px;"><input type="checkbox" disabled></th>
+                        <th>Nom</th>
+                        <th>Catégories</th>
+                        <th>Liste de contacts</th>
+                        <th class="text-center">Factures</th>
+                        <th class="text-center">Devis</th>
+                        <th style="width: 140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in clients.items %}
+                    {% set client = item[0] %}
+                    {% set factures_count = item[1] or 0 %}
+                    {% set devis_count = item[2] or 0 %}
+                    <tr>
+                        <td><input type="checkbox" disabled></td>
+                        <td>{{ client.nom }}</td>
+                        <td>{{ client.categories or '-' }}</td>
+                        <td>
+                            {% if client.contacts %}
+                                {% for contact in client.contacts[:2] %}
+                                    <div>{{ contact.nom or contact.email or contact.telephone }}</div>
+                                {% endfor %}
+                                {% if client.contacts|length > 2 %}
+                                    <div class="text-muted">+{{ client.contacts|length - 2 }} autres</div>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ factures_count }}</td>
+                        <td class="text-center">{{ devis_count }}</td>
+                        <td>
+                            <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">Voir</a>
+                            <a href="{{ url_for('modifier_client', client_id=client.id) }}" class="btn btn-sm btn-outline-secondary">Éditer</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Aucun client trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if clients.pages > 1 %}
+    <nav aria-label="Pagination clients" class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if clients.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('clients', page=clients.prev_num, q=filters.q) }}">Précédent</a>
+            </li>
+            {% endif %}
+            {% for page_num in clients.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != clients.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('clients', page=page_num, q=filters.q) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+            {% if clients.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('clients', page=clients.next_num, q=filters.q) }}">Suivant</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

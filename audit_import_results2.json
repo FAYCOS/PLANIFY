@@ -1,0 +1,362 @@
+[
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/ai_assistant.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/ai_routes.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/ai_smart_assistant.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/api_scanner.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/app.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/automation_system.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/backup_manager.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_and_deploy.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_app.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_complete.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_exe_simple.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_fixed.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_installer.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/build_simple.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/check_init.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/clean_app.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/client_export.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/configure_google_calendar.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/create_admin.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/create_icon.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/deploy.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/diagnostic_reseau.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/email_service.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/examples/scanner_client.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/examples/test_scanner_api.py",
+    "ok": false,
+    "output": "POST 200 {'action': 'updated', 'materiel_id': 12, 'success': True}\nGET 200 {'materiel': {'categorie': 'Sonorisation', 'code_barre': 'TESTCODE12345', 'id': 12, 'local_id': 1, 'nom': 'Test Speaker 2000', 'prix_location': 20.0, 'quantite': 3}, 'success': True}\nOK\n2026-01-20 11:52:49,070 - app - INFO - ✅ Blueprint IA enregistré avec succès\n2026-01-20 11:52:49,072 - app - INFO - ✅ API scanner enregistré (/api/scan_material)\n2026-01-20 11:52:49,212 - tmp_audit - INFO - OK"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/excel_export.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/financial_reports.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/fix_app.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/generate_audit_pdf.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/generate_detailed_manual.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/generate_pdf_manual.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/google_calendar_config.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/icalendar_generator.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/init_key_manager.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/invoice_generator.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/lazy_imports.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_add_prix_location.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_branding.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_client_fields.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_devis_acompte.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_dj_users.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_dj_users_auto.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_factures_acompte.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_google_calendar.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_grille_tarifaire.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_modules.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_signature_electronique.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_stripe_paiements.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/migrate_user_profile.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/mobile_api.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/notification_system.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/notifications.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/pdf_generator.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/populate_test_data.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/reset_complete.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/reset_db_with_test_data.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/reset_init.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/restart.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/run.py",
+    "ok": true,
+    "skipped": "run.py"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/run_production.py",
+    "ok": true,
+    "skipped": "run_production.py"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/scripts/audit_import_runner.py",
+    "ok": false,
+    "error": "timeout"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/scripts/audit_import_runner2.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/scripts/migrate_add_code_barre.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_csrf.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_file_upload.py",
+    "ok": false,
+    "output": "ERR\nTraceback (most recent call last):\n  File \"<string>\", line 13, in <module>\n    spec.loader.exec_module(mod)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^\n  File \"<frozen importlib._bootstrap_external>\", line 1026, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_file_upload.py\", line 8, in <module>\n    import magic\n  File \"/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/magic/__init__.py\", line 209, in <module>\n    libmagic = loader.load_lib()\n  File \"/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/magic/loader.py\", line 49, in load_lib\n    raise ImportError('failed to find libmagic.  Check your installation')\nImportError: failed to find libmagic.  Check your installation"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_logging.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_passwords.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_rate_limiting.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_sessions.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_sql_injection.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/security_validators.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/setup.py",
+    "ok": false,
+    "output": "ERR\nTraceback (most recent call last):\n  File \"<string>\", line 13, in <module>\n    spec.loader.exec_module(mod)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^\n  File \"<frozen importlib._bootstrap_external>\", line 1026, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"/Users/gregoirenizery/Desktop/logiciel presta/v2.12/setup.py\", line 6, in <module>\n    from cx_Freeze import setup, Executable\nModuleNotFoundError: No module named 'cx_Freeze'"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/setup_google_calendar.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/start.py",
+    "ok": true,
+    "skipped": "start.py"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/start_clean.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/test_facture_generation.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/test_materiel_display.py",
+    "ok": true
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/tools/generate_md_pdf.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  },
+  {
+    "path": "/Users/gregoirenizery/Desktop/logiciel presta/v2.12/tools/replace_prints.py",
+    "ok": true,
+    "skipped": "has_main_or_run"
+  }
+]

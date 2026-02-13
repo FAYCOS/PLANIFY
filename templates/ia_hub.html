@@ -1,0 +1,1392 @@
+{% extends "base.html" %}
+
+{% block title %}Centre IA - Planify{% endblock %}
+{% block page_title %}Intelligence artificielle{% endblock %}
+
+{% block content %}
+<div class="ai-page fade-in">
+    <div class="ai-container max-w-6xl mx-auto space-y-6">
+        <div class="ai-overview{% if current_user.role == 'admin' %} ai-overview--split{% endif %}">
+            <div class="card ai-card ai-hero">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-robot"></i>
+                        Centre IA
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Accès centralisé aux fonctionnalités IA</p>
+                </div>
+                <div class="card-body">
+                    <div class="ai-hero-grid">
+                        <div class="ai-hero-status">
+                            <div class="ai-status-row">
+                                <span class="status-pill {{ 'status-ok' if groq_status.active else 'status-warn' }}">
+                                    Groq IA : {{ groq_status.message }}
+                                </span>
+                                {% if groq_status.source %}
+                                <span class="ai-status-source">Source : {{ groq_status.source }}</span>
+                                {% endif %}
+                            </div>
+                            {% if groq_status.error %}
+                            <div class="ai-status-error">{{ groq_status.error }}</div>
+                            {% endif %}
+                            <p class="ai-hero-note">Activez les modules IA pour accélérer la préparation, la logistique et la prise de décision.</p>
+                        </div>
+                        <div class="ai-hero-actions">
+                            <div class="ai-quick-actions">
+                                <a href="{{ url_for('nouvelle_prestation') }}" class="btn btn-secondary">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Nouvelle mission
+                                </a>
+                                <a href="{{ url_for('nouveau_devis') }}" class="btn btn-secondary">
+                                    <i class="fas fa-file-invoice"></i>
+                                    Nouveau devis
+                                </a>
+                                {% if current_user.role == 'admin' %}
+                                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                                    <i class="fas fa-chart-line"></i>
+                                    Dashboard admin
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if current_user.role == 'admin' %}
+            <div class="card ai-card ai-settings">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-key"></i>
+                        Clé API Groq
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Stockée en base. La variable d'environnement GROQ_API_KEY reste prioritaire.</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ia_update_key') }}" class="space-y-4">
+                        <div class="form-group">
+                            <label class="form-label" for="groq_api_key">Clé API Groq</label>
+                            <input type="password" id="groq_api_key" name="groq_api_key" class="form-control"
+                                   placeholder="Laisser vide pour conserver la clé actuelle" autocomplete="new-password">
+                            <small class="text-muted">
+                                {% if parametres and parametres.groq_api_key %}
+                                    Clé enregistrée.
+                                {% else %}
+                                    Aucune clé enregistrée.
+                                {% endif %}
+                            </small>
+                        </div>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" name="clear_groq_api_key" value="1" class="form-checkbox h-5 w-5 text-red-600">
+                            <span class="text-gray-700">Effacer la clé enregistrée</span>
+                        </label>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Enregistrer la clé
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card ai-card ai-tools">
+            <div class="card-header ai-tools-header">
+                <div>
+                    <h3 class="card-title">
+                        <i class="fas fa-brain"></i>
+                        Outils IA
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Sélectionnez un outil, lancez l’analyse et récupérez les recommandations.</p>
+                </div>
+                <div class="ai-tools-filter">
+                    <div class="ai-filter-group">
+                        <button type="button" class="ai-filter-btn active" data-ai-filter="all">Tous</button>
+                        <button type="button" class="ai-filter-btn" data-ai-filter="ops">Opérations</button>
+                        <button type="button" class="ai-filter-btn" data-ai-filter="business">Business</button>
+                        <button type="button" class="ai-filter-btn" data-ai-filter="comms">Communication</button>
+                    </div>
+                    <label class="ai-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="ai-search" placeholder="Rechercher un outil IA">
+                    </label>
+                </div>
+            </div>
+            <div class="card-body ai-card-body">
+                <div class="ai-section" data-category="ops">
+                    <div class="ai-section-head">
+                        <div>
+                            <h4 class="ai-section-title">Opérations & planning</h4>
+                            <p class="ai-section-desc">Préparation terrain, disponibilité, logistique.</p>
+                        </div>
+                        <span class="ai-chip ai-chip--ops">Planning</span>
+                    </div>
+                    <div class="ai-grid">
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Brief mission</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="number" id="brief_prestation_id" class="form-control" placeholder="ID mission (optionnel)">
+                                <input type="number" id="brief_devis_id" class="form-control" placeholder="ID devis (optionnel)">
+                                <button type="button" class="btn btn-secondary" onclick="aiBriefEvent()">Générer</button>
+                            </div>
+                            <div id="brief_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Suggérer un Prestataire</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="date" id="dj_date" class="form-control">
+                                <input type="text" id="dj_style" class="form-control" placeholder="Style musical">
+                                <input type="text" id="dj_lieu" class="form-control" placeholder="Localisation">
+                                <button type="button" class="btn btn-secondary" onclick="aiSuggestDjHub()">Suggérer</button>
+                            </div>
+                            <div id="dj_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Détecter conflits</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="date" id="conflict_date" class="form-control">
+                                <input type="time" id="conflict_start" class="form-control">
+                                <input type="time" id="conflict_end" class="form-control">
+                                <select id="conflict_dj" class="form-control form-select">
+                                    <option value="">Prestataire (optionnel)</option>
+                                    {% for dj in djs %}
+                                        <option value="{{ dj.id }}">{{ dj.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select id="conflict_materiels" class="form-control" multiple style="min-height:120px;">
+                                    {% for materiel in materiels %}
+                                        <option value="{{ materiel.id }}">{{ materiel.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-secondary" onclick="aiDetectConflictsHub()">Détecter</button>
+                            </div>
+                            <div id="conflict_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Optimiser planning</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="date" id="optimize_start" class="form-control">
+                                <input type="date" id="optimize_end" class="form-control">
+                                <button type="button" class="btn btn-secondary" onclick="aiOptimizeScheduleHub()">Optimiser</button>
+                            </div>
+                            <div id="optimize_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Optimisation logistique</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="date" id="logistics_start" class="form-control">
+                                <input type="date" id="logistics_end" class="form-control">
+                                <button type="button" class="btn btn-secondary" onclick="aiOptimizeLogistics()">Optimiser</button>
+                            </div>
+                            <div id="logistics_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Recommander équipement</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="text" id="equip_type" class="form-control" placeholder="Type de mission">
+                                <input type="number" id="equip_invites" class="form-control" placeholder="Nombre d'invités">
+                                <input type="number" id="equip_duree" class="form-control" placeholder="Durée (heures)">
+                                <button type="button" class="btn btn-secondary" onclick="aiRecommendEquipmentHub()">Recommander</button>
+                            </div>
+                            <div id="equip_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Auto-remplissage</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="text" id="autofill_type" class="form-control" placeholder="Type de mission">
+                                <input type="number" id="autofill_invites" class="form-control" placeholder="Nombre d'invités">
+                                <input type="date" id="autofill_date" class="form-control">
+                                <input type="number" id="autofill_duree" class="form-control" placeholder="Durée (heures)">
+                                <button type="button" class="btn btn-secondary" onclick="aiAutofillHub()">Générer</button>
+                            </div>
+                            <div id="autofill_result" class="ai-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-section" data-category="business">
+                    <div class="ai-section-head">
+                        <div>
+                            <h4 class="ai-section-title">Business & performance</h4>
+                            <p class="ai-section-desc">Tarifs, conversion, forecasting, scoring.</p>
+                        </div>
+                        <span class="ai-chip ai-chip--business">Business</span>
+                    </div>
+                    <div class="ai-grid">
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Prédiction de prix</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="text" id="predict_type" class="form-control" placeholder="Type de mission">
+                                <input type="number" id="predict_invites" class="form-control" placeholder="Nombre d'invités">
+                                <input type="date" id="predict_date" class="form-control">
+                                <input type="number" id="predict_duree" class="form-control" placeholder="Durée (heures)">
+                                <button type="button" class="btn btn-secondary" onclick="aiPredictPrice()">Calculer</button>
+                            </div>
+                            <div id="predict_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Upsell intelligent</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="text" id="upsell_type" class="form-control" placeholder="Type de mission">
+                                <input type="number" id="upsell_invites" class="form-control" placeholder="Nombre d'invités">
+                                <input type="number" id="upsell_budget" class="form-control" placeholder="Budget estimé">
+                                <button type="button" class="btn btn-secondary" onclick="aiUpsell()">Suggérer</button>
+                            </div>
+                            <div id="upsell_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Prévisions CA</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="number" id="forecast_months" class="form-control" placeholder="Mois à prévoir" value="3">
+                                <button type="button" class="btn btn-secondary" onclick="aiForecastRevenueHub()">Prévoir</button>
+                            </div>
+                            <div id="forecast_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Prévision de charge</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="number" id="load_months" class="form-control" placeholder="Mois à prévoir" value="3">
+                                <button type="button" class="btn btn-secondary" onclick="aiForecastLoad()">Prévoir</button>
+                            </div>
+                            <div id="load_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Analyse conversions</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="date" id="conversions_start" class="form-control">
+                                <input type="date" id="conversions_end" class="form-control">
+                                <button type="button" class="btn btn-secondary" onclick="aiAnalyzeConversions()">Analyser</button>
+                            </div>
+                            <div id="conversions_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Événements similaires</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="text" id="similar_type" class="form-control" placeholder="Type de mission">
+                                <input type="text" id="similar_location" class="form-control" placeholder="Localisation">
+                                <input type="number" id="similar_limit" class="form-control" placeholder="Nombre" value="5">
+                                <button type="button" class="btn btn-secondary" onclick="aiSimilarEventsHub()">Lister</button>
+                            </div>
+                            <div id="similar_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Performance Prestataire</h4>
+                            <div class="ai-fields space-y-2">
+                                <select id="performance_dj" class="form-control form-select">
+                                    <option value="">Sélectionner un Prestataire</option>
+                                    {% for dj in djs %}
+                                        <option value="{{ dj.id }}">{{ dj.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-secondary" onclick="aiAnalyzeDjHub()">Analyser</button>
+                            </div>
+                            <div id="performance_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Scoring client</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="number" id="score_reservation_id" class="form-control" placeholder="ID réservation (optionnel)">
+                                <input type="number" id="score_devis_id" class="form-control" placeholder="ID devis (optionnel)">
+                                <input type="text" id="score_client" class="form-control" placeholder="Nom client">
+                                <input type="number" id="score_invites" class="form-control" placeholder="Invités">
+                                <input type="number" id="score_budget" class="form-control" placeholder="Budget">
+                                <input type="number" id="score_lead_days" class="form-control" placeholder="Délai (jours)">
+                                <button type="button" class="btn btn-secondary" onclick="aiScoreClient()">Scorer</button>
+                            </div>
+                            <div id="score_result" class="ai-result"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Détection d'anomalies</h4>
+                            <div class="ai-fields space-y-2">
+                                <select id="anomalies_scope" class="form-control form-select">
+                                    <option value="all">Tout</option>
+                                    <option value="devis">Devis</option>
+                                    <option value="factures">Factures</option>
+                                    <option value="prestations">Missions</option>
+                                </select>
+                                <input type="number" id="anomalies_limit" class="form-control" placeholder="Nombre d'éléments" value="200">
+                                <button type="button" class="btn btn-secondary" onclick="aiDetectAnomalies()">Analyser</button>
+                            </div>
+                            <div id="anomalies_result" class="ai-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-section" data-category="comms">
+                    <div class="ai-section-head">
+                        <div>
+                            <h4 class="ai-section-title">Communication</h4>
+                            <p class="ai-section-desc">Emails et chat client.</p>
+                        </div>
+                        <span class="ai-chip ai-chip--comms">Communication</span>
+                    </div>
+                    <div class="ai-grid">
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Assistant email</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="number" id="email_prestation_id" class="form-control" placeholder="ID mission (optionnel)">
+                                <select id="email_purpose" class="form-control form-select">
+                                    <option value="confirmation">Confirmation</option>
+                                    <option value="relance">Relance</option>
+                                    <option value="infos">Demande d'infos</option>
+                                </select>
+                                <input type="text" id="email_client" class="form-control" placeholder="Nom du client">
+                                <input type="text" id="email_type" class="form-control" placeholder="Type de mission">
+                                <input type="date" id="email_date" class="form-control">
+                                <input type="text" id="email_notes" class="form-control" placeholder="Notes (optionnel)">
+                                <button type="button" class="btn btn-secondary" onclick="aiGenerateEmail()">Générer</button>
+                            </div>
+                            <div id="email_result" class="ai-result ai-result--info"></div>
+                        </div>
+
+                        <div class="ai-tool-card">
+                            <h4 class="ai-tool-title">Chat assistant IA (public)</h4>
+                            <div class="ai-fields space-y-2">
+                                <input type="text" id="chat_input" class="form-control" placeholder="Votre message">
+                                <button type="button" class="btn btn-primary" onclick="aiChatSend()">Envoyer</button>
+                            </div>
+                            <div id="chat_result" class="ai-result ai-result--info"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ai-empty-state" class="ai-empty-state hidden">
+                    <div class="ai-empty-icon">
+                        <i class="fas fa-filter"></i>
+                    </div>
+                    <div>
+                        <strong>Aucun outil ne correspond</strong>
+                        <p>Essayez un autre filtre ou un mot-clé plus simple.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.ai-page {
+    --ai-bg-1: #f7f9fc;
+    --ai-bg-2: #eef2f7;
+    --ai-card: #ffffff;
+    --ai-border: rgba(15, 60, 89, 0.12);
+    --ai-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+    --ai-accent: var(--accent-1);
+    --ai-accent-strong: var(--accent-1);
+    --ai-accent-soft: rgba(15, 60, 89, 0.12);
+    --ai-success: #16a34a;
+    --ai-warn: #d97706;
+    --ai-danger: #ef4444;
+    --ai-info: #1f2937;
+    --ai-ink: var(--text-dark);
+    --ai-muted: var(--text-gray);
+    position: relative;
+    padding: 20px 0 48px;
+    background: linear-gradient(180deg, var(--ai-bg-1) 0%, var(--ai-bg-2) 100%);
+    color: var(--ai-ink);
+    font-family: var(--font-sans);
+}
+.ai-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(17, 24, 39, 0.08), transparent 45%),
+        radial-gradient(circle at 88% 12%, rgba(15, 23, 42, 0.06), transparent 50%),
+        radial-gradient(circle at 82% 85%, rgba(17, 24, 39, 0.08), transparent 55%);
+    pointer-events: none;
+}
+.ai-page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(transparent 95%, rgba(15, 23, 42, 0.04) 100%),
+                      linear-gradient(90deg, transparent 95%, rgba(15, 23, 42, 0.04) 100%);
+    background-size: 48px 48px;
+    opacity: 0.35;
+    pointer-events: none;
+}
+.ai-container {
+    position: relative;
+    z-index: 1;
+    padding: 0 12px;
+}
+.ai-overview {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    align-items: stretch;
+}
+.ai-overview--split {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+.ai-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: 18px;
+    align-items: start;
+}
+.ai-hero-status {
+    display: grid;
+    gap: 10px;
+}
+.ai-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.ai-status-source {
+    font-size: 0.78rem;
+    color: var(--ai-muted);
+}
+.ai-status-error {
+    font-size: 0.82rem;
+    color: var(--ai-danger);
+}
+.ai-hero-note {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--ai-muted);
+}
+.ai-hero-actions {
+    display: grid;
+    align-content: start;
+}
+.ai-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.ai-card {
+    border: 1px solid var(--ai-border);
+    border-radius: 20px;
+    background: var(--ai-card);
+    box-shadow: var(--ai-shadow);
+    overflow: hidden;
+}
+.ai-card .card-header {
+    background: linear-gradient(120deg, #f8fafc, #eef1f4);
+    border-bottom: 1px solid var(--ai-border);
+}
+.ai-hero .card-header {
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.08), rgba(148, 163, 184, 0.2));
+}
+.ai-settings .card-header {
+    background: linear-gradient(120deg, rgba(15, 23, 42, 0.08), rgba(148, 163, 184, 0.16));
+}
+.ai-tools-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.ai-tools-filter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.ai-filter-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--ai-border);
+    background: rgba(15, 23, 42, 0.06);
+}
+.ai-filter-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--ai-ink);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.ai-filter-btn.active {
+    background: var(--ai-accent);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(17, 24, 39, 0.2);
+}
+.ai-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--ai-border);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--ai-muted);
+}
+.ai-search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.9rem;
+    min-width: 180px;
+    color: var(--ai-ink);
+}
+.ai-card-body {
+    display: grid;
+    gap: 20px;
+}
+
+.ai-section {
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+}
+.ai-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.ai-section-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    letter-spacing: 0.3px;
+}
+.ai-section-desc {
+    margin: 4px 0 0;
+    font-size: 0.92rem;
+    color: var(--ai-muted);
+}
+.ai-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+.ai-tool-card {
+    position: relative;
+    border: 1px solid var(--ai-border);
+    border-radius: 18px;
+    padding: 16px;
+    background: linear-gradient(150deg, #ffffff, #f5f7fb);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+    min-height: 220px;
+    animation: ai-rise 0.4s ease both;
+}
+.ai-tool-card::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--ai-accent), rgba(148, 163, 184, 0.35));
+    opacity: 0.6;
+}
+.ai-tool-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 28px rgba(15, 23, 42, 0.14);
+}
+.ai-grid .ai-tool-card:nth-child(1) { animation-delay: 40ms; }
+.ai-grid .ai-tool-card:nth-child(2) { animation-delay: 80ms; }
+.ai-grid .ai-tool-card:nth-child(3) { animation-delay: 120ms; }
+.ai-grid .ai-tool-card:nth-child(4) { animation-delay: 160ms; }
+.ai-grid .ai-tool-card:nth-child(5) { animation-delay: 200ms; }
+.ai-grid .ai-tool-card:nth-child(6) { animation-delay: 240ms; }
+.ai-grid .ai-tool-card:nth-child(7) { animation-delay: 280ms; }
+.ai-grid .ai-tool-card:nth-child(8) { animation-delay: 320ms; }
+.ai-grid .ai-tool-card:nth-child(9) { animation-delay: 360ms; }
+.ai-grid .ai-tool-card:nth-child(10) { animation-delay: 400ms; }
+.ai-grid .ai-tool-card:nth-child(11) { animation-delay: 440ms; }
+.ai-grid .ai-tool-card:nth-child(12) { animation-delay: 480ms; }
+.ai-tool-title {
+    margin: 0 0 10px;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: #0f172a;
+}
+.ai-fields {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+}
+.ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--ai-ink);
+}
+.ai-chip--ops {
+    background: rgba(17, 24, 39, 0.12);
+    color: #111827;
+}
+.ai-chip--business {
+    background: rgba(17, 24, 39, 0.08);
+    color: #111827;
+}
+.ai-chip--comms {
+    background: rgba(148, 163, 184, 0.2);
+    color: #1f2937;
+}
+
+.ai-result {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px dashed var(--ai-border);
+    background: rgba(248, 250, 252, 0.9);
+    font-size: 0.92rem;
+    color: #1f2937;
+    min-height: 44px;
+    display: grid;
+    gap: 6px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+.ai-result--success {
+    border-color: rgba(22, 163, 74, 0.4);
+    background: rgba(22, 163, 74, 0.08);
+}
+.ai-result--warn {
+    border-color: rgba(245, 158, 11, 0.5);
+    background: rgba(245, 158, 11, 0.12);
+}
+.ai-result--error {
+    border-color: rgba(239, 68, 68, 0.45);
+    background: rgba(239, 68, 68, 0.12);
+}
+.ai-result--info {
+    border-color: rgba(14, 165, 233, 0.35);
+    background: rgba(14, 165, 233, 0.08);
+}
+.ai-loading {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+    background-size: 200% 100%;
+    animation: ai-shimmer 1.2s ease-in-out infinite;
+    color: #475569;
+}
+.ai-loading::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(37, 99, 235, 0.3);
+    border-top-color: var(--ai-accent);
+    animation: ai-spin 0.8s linear infinite;
+}
+.ai-loading-text {
+    font-weight: 600;
+}
+.ai-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+.ai-list li {
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+.ai-empty {
+    color: #64748b;
+    font-style: italic;
+}
+.ai-email {
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+.ai-chat {
+    display: grid;
+    gap: 8px;
+}
+.ai-chat-line {
+    display: grid;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+.ai-chat-label {
+    font-weight: 700;
+    color: var(--ai-accent);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    background: #f3f4f6;
+    color: #334155;
+}
+.status-pill::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.6;
+}
+.status-ok {
+    background: rgba(22, 163, 74, 0.16);
+    color: #15803d;
+}
+.status-warn {
+    background: rgba(245, 158, 11, 0.18);
+    color: #92400e;
+}
+.ai-empty-state {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px dashed var(--ai-border);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--ai-muted);
+}
+.ai-empty-state strong {
+    display: block;
+    color: var(--ai-ink);
+    margin-bottom: 4px;
+}
+.ai-empty-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(29, 78, 216, 0.12);
+    color: var(--ai-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes ai-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+@keyframes ai-rise {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes ai-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-tool-card {
+        animation: none;
+    }
+    .ai-tool-card:hover {
+        transform: none;
+    }
+    .ai-loading {
+        animation: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .ai-overview,
+    .ai-hero-grid {
+        grid-template-columns: 1fr;
+    }
+    .ai-tools-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .ai-grid {
+        grid-template-columns: 1fr;
+    }
+    .ai-section-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .ai-search {
+        width: 100%;
+    }
+    .ai-search input {
+        min-width: 0;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
+function listItems(items) {
+    if (!items || !items.length) return '<div class="ai-empty">Aucun résultat.</div>';
+    return `<ul class="ai-list">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+}
+
+const aiHeaders = () => {
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const publicTokenMeta = document.querySelector('meta[name="public-api-token"]');
+    const publicToken = publicTokenMeta ? publicTokenMeta.getAttribute('content') : '';
+    if (publicToken) headers['X-Public-Token'] = publicToken;
+    return headers;
+};
+
+function setLoading(element, message) {
+    if (!element) return;
+    element.classList.add('ai-loading');
+    element.classList.remove('ai-result--success', 'ai-result--warn', 'ai-result--error', 'ai-result--info');
+    element.setAttribute('aria-busy', 'true');
+    element.innerHTML = `<span class="ai-loading-text">${escapeHtml(message || 'Chargement...')}</span>`;
+}
+
+function setResult(element, html, variant) {
+    if (!element) return;
+    element.classList.remove('ai-loading');
+    element.classList.remove('ai-result--success', 'ai-result--warn', 'ai-result--error', 'ai-result--info');
+    element.setAttribute('aria-busy', 'false');
+    if (variant) {
+        element.classList.add(`ai-result--${variant}`);
+    }
+    element.innerHTML = html;
+}
+
+function setTextResult(element, text, variant) {
+    setResult(element, `<span>${escapeHtml(text)}</span>`, variant);
+}
+
+async function aiBriefEvent() {
+    const result = document.getElementById('brief_result');
+    setLoading(result, 'Génération du brief...');
+    const response = await fetch('/api/ai/brief', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            prestation_id: document.getElementById('brief_prestation_id').value || null,
+            devis_id: document.getElementById('brief_devis_id').value || null
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.brief) {
+        const brief = data.brief;
+        const items = [
+            `Client: ${brief.client}`,
+            `Date: ${brief.date}`,
+            `Horaires: ${brief.heure_debut} - ${brief.heure_fin}`,
+            `Lieu: ${brief.lieu}`,
+            `Prestataire: ${brief.dj || 'N/A'}`,
+            `Équipement: ${(brief.materiels || []).join(', ') || 'N/A'}`
+        ];
+        const checklist = (brief.checklist || []).map(item => `✔ ${item}`);
+        setResult(result, listItems(items.concat(checklist)), 'success');
+    } else {
+        setTextResult(result, data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiDetectAnomalies() {
+    const result = document.getElementById('anomalies_result');
+    setLoading(result, 'Analyse des anomalies...');
+    const scope = document.getElementById('anomalies_scope').value;
+    const limit = document.getElementById('anomalies_limit').value || 200;
+    const response = await fetch(`/api/ai/detect-anomalies?scope=${encodeURIComponent(scope)}&limit=${encodeURIComponent(limit)}`);
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.anomalies || []).map(a => `${a.entity}: ${a.message}`);
+        setResult(result, listItems(items), items.length ? 'warn' : 'info');
+    } else {
+        setTextResult(result, data.error || 'Erreur', 'error');
+    }
+}
+
+async function aiUpsell() {
+    const result = document.getElementById('upsell_result');
+    setLoading(result, 'Calcul des suggestions...');
+    const response = await fetch('/api/ai/upsell', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            type_evenement: document.getElementById('upsell_type').value,
+            nombre_invites: document.getElementById('upsell_invites').value || 100,
+            budget: document.getElementById('upsell_budget').value || null
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.suggestions || []).map(item => `${item.nom} (${item.raison || 'Suggestion'})`);
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiForecastLoad() {
+    const result = document.getElementById('load_result');
+    setLoading(result, 'Prévision de charge...');
+    const months = document.getElementById('load_months').value || 3;
+    const response = await fetch(`/api/ai/forecast-load?mois=${encodeURIComponent(months)}`);
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.forecasts || []).map(item => `${item.mois}: ${item.prestations_prevues} missions`);
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiOptimizeLogistics() {
+    const result = document.getElementById('logistics_result');
+    setLoading(result, 'Optimisation logistique...');
+    const response = await fetch('/api/ai/optimize-logistics', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            date_debut: document.getElementById('logistics_start').value,
+            date_fin: document.getElementById('logistics_end').value
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.suggestions || []).map(item => item.message || 'Suggestion IA');
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiAnalyzeConversions() {
+    const result = document.getElementById('conversions_result');
+    setLoading(result, 'Analyse des conversions...');
+    const start = document.getElementById('conversions_start').value;
+    const end = document.getElementById('conversions_end').value;
+    const params = new URLSearchParams();
+    if (start) params.append('start_date', start);
+    if (end) params.append('end_date', end);
+    const response = await fetch(`/api/ai/analyze-conversions?${params.toString()}`);
+    const data = await response.json();
+    if (data.success && data.stats) {
+        const s = data.stats;
+        const items = [
+            `Total devis: ${s.total_devis}`,
+            `Acceptés: ${s.acceptes}`,
+            `Refusés: ${s.refuses}`,
+            `Expirés: ${s.expires}`,
+            `Taux d'acceptation: ${s.acceptance_rate}%`,
+            `Conversion devis→facture: ${s.conversion_rate}%`
+        ];
+        setResult(result, listItems(items), 'success');
+    } else {
+        setTextResult(result, data.message || data.error || 'Erreur', 'error');
+    }
+}
+
+async function aiGenerateEmail() {
+    const result = document.getElementById('email_result');
+    setLoading(result, "Génération de l'email...");
+    const response = await fetch('/api/ai/generate-email', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            purpose: document.getElementById('email_purpose').value,
+            prestation_id: document.getElementById('email_prestation_id').value || null,
+            client_name: document.getElementById('email_client').value,
+            event_type: document.getElementById('email_type').value,
+            date_prestation: document.getElementById('email_date').value,
+            extra_notes: document.getElementById('email_notes').value
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        setResult(result, `<div class="ai-email">${escapeHtml(data.email || '')}</div>`, 'success');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiScoreClient() {
+    const result = document.getElementById('score_result');
+    setLoading(result, 'Scoring client...');
+    const response = await fetch('/api/ai/score-client', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            reservation_id: document.getElementById('score_reservation_id').value || null,
+            devis_id: document.getElementById('score_devis_id').value || null,
+            client_name: document.getElementById('score_client').value,
+            nb_invites: document.getElementById('score_invites').value || null,
+            budget: document.getElementById('score_budget').value || null,
+            lead_days: document.getElementById('score_lead_days').value || null
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.score) {
+        const s = data.score;
+        const items = [
+            `Client: ${s.client}`,
+            `Score: ${s.score}/100`,
+            `Raisons: ${(s.reasons || []).join(', ') || 'N/A'}`
+        ];
+        setResult(result, listItems(items), 'success');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiPredictPrice() {
+    const result = document.getElementById('predict_result');
+    setLoading(result, 'Calcul du tarif...');
+    const response = await fetch('/api/ai/predict-price', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            type_evenement: document.getElementById('predict_type').value,
+            nombre_invites: document.getElementById('predict_invites').value || 100,
+            date: document.getElementById('predict_date').value,
+            duree_heures: document.getElementById('predict_duree').value || 4
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const message = data.message || `Prix recommandé : ${data.prix_suggere}€`;
+        setTextResult(result, message, 'success');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiSuggestDjHub() {
+    const result = document.getElementById('dj_result');
+    setLoading(result, 'Recherche du Prestataire...');
+    const response = await fetch('/api/ai/suggest-dj', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            date: document.getElementById('dj_date').value,
+            style_musical: document.getElementById('dj_style').value,
+            localisation: document.getElementById('dj_lieu').value
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.dj) {
+        const dj = data.dj;
+        const items = [
+            `Prestataire: ${dj.nom} ${dj.prenom || ''}`.trim(),
+            `Spécialité: ${dj.specialite || 'N/A'}`,
+            `Téléphone: ${dj.telephone || 'N/A'}`,
+            `Email: ${dj.email || 'N/A'}`
+        ];
+        setResult(result, listItems(items), 'success');
+    } else {
+        const message = data.error || data.message || 'Aucun Prestataire';
+        setTextResult(result, message, data.error ? 'error' : 'warn');
+    }
+}
+
+async function aiRecommendEquipmentHub() {
+    const result = document.getElementById('equip_result');
+    setLoading(result, 'Calcul du matériel...');
+    const response = await fetch('/api/ai/recommend-equipment', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            type_evenement: document.getElementById('equip_type').value,
+            nombre_invites: document.getElementById('equip_invites').value || 100,
+            duree_heures: document.getElementById('equip_duree').value || 4
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.recommendations || []).map(item => `${item.nom} (${item.priorite})`);
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiDetectConflictsHub() {
+    const result = document.getElementById('conflict_result');
+    setLoading(result, 'Analyse des conflits...');
+    const materielSelect = document.getElementById('conflict_materiels');
+    const materielIds = Array.from(materielSelect.selectedOptions).map(opt => parseInt(opt.value, 10));
+    const djId = document.getElementById('conflict_dj').value;
+    const response = await fetch('/api/ai/detect-conflicts', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            date: document.getElementById('conflict_date').value,
+            heure_debut: document.getElementById('conflict_start').value,
+            heure_fin: document.getElementById('conflict_end').value,
+            materiel_ids: materielIds,
+            dj_id: djId ? parseInt(djId, 10) : null
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.has_conflicts) {
+        const items = data.conflicts.map(c => c.message || 'Conflit détecté');
+        setResult(result, listItems(items), 'warn');
+    } else if (data.success) {
+        setTextResult(result, 'Aucun conflit détecté.', 'success');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiForecastRevenueHub() {
+    const result = document.getElementById('forecast_result');
+    setLoading(result, "Prévision du chiffre d'affaires...");
+    const months = document.getElementById('forecast_months').value || 3;
+    const response = await fetch(`/api/ai/forecast-revenue?mois=${encodeURIComponent(months)}`);
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.forecasts || []).map(item => `${item.mois}: ${item.prevision}€`);
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiOptimizeScheduleHub() {
+    const result = document.getElementById('optimize_result');
+    setLoading(result, 'Optimisation du planning...');
+    const response = await fetch('/api/ai/optimize-schedule', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            date_debut: document.getElementById('optimize_start').value,
+            date_fin: document.getElementById('optimize_end').value
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.suggestions || []).map(item => item.message || 'Suggestion IA');
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiSimilarEventsHub() {
+    const result = document.getElementById('similar_result');
+    setLoading(result, 'Recherche des missions similaires...');
+    const type = document.getElementById('similar_type').value;
+    const location = document.getElementById('similar_location').value;
+    const limit = document.getElementById('similar_limit').value || 5;
+    const response = await fetch(`/api/ai/similar-events?type_evenement=${encodeURIComponent(type)}&localisation=${encodeURIComponent(location)}&limit=${encodeURIComponent(limit)}`);
+    const data = await response.json();
+    if (data.success) {
+        const items = (data.suggestions || []).map(item => {
+            const tarif = item.tarif != null ? `${item.tarif}€` : 'Tarif N/A';
+            return `${item.nom} (${tarif})`;
+        });
+        setResult(result, listItems(items), items.length ? 'success' : 'info');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+async function aiAnalyzeDjHub() {
+    const result = document.getElementById('performance_result');
+    setLoading(result, 'Analyse des performances...');
+    const djId = document.getElementById('performance_dj').value;
+    if (!djId) {
+        setTextResult(result, 'Sélectionnez un Prestataire.', 'warn');
+        return;
+    }
+    const response = await fetch(`/api/ai/analyze-dj/${encodeURIComponent(djId)}`);
+    const data = await response.json();
+    if (data.success && data.analysis) {
+        const a = data.analysis;
+        const items = [
+            `Missions: ${a.prestations_total}`,
+            `Chiffre d'affaires: ${a.chiffre_affaires}€`,
+            `CA moyen: ${a.ca_moyen_prestation}€`,
+            `Spécialité: ${a.specialite_detectee || 'N/A'}`
+        ];
+        setResult(result, listItems(items), 'success');
+    } else {
+        setTextResult(result, data.message || data.error || 'Erreur', 'error');
+    }
+}
+
+async function aiAutofillHub() {
+    const result = document.getElementById('autofill_result');
+    setLoading(result, 'Auto-remplissage...');
+    const response = await fetch('/api/ai/autofill', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({
+            type_evenement: document.getElementById('autofill_type').value,
+            nombre_invites: document.getElementById('autofill_invites').value || 100,
+            date: document.getElementById('autofill_date').value,
+            duree_heures: document.getElementById('autofill_duree').value || 4
+        })
+    });
+    const data = await response.json();
+    if (data.success && data.autofill) {
+        const items = [];
+        if (data.autofill.tarif) items.push(`Tarif: ${data.autofill.tarif}€`);
+        if (data.autofill.dj) items.push(`Prestataire: ${data.autofill.dj.nom}`);
+        if (data.autofill.materiels) items.push(`Équipement suggéré: ${data.autofill.materiels.length}`);
+        setResult(result, listItems(items), 'success');
+    } else {
+        setTextResult(result, data.error || data.message || 'Erreur', 'error');
+    }
+}
+
+const chatConversationId = `hub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+async function aiChatSend() {
+    const result = document.getElementById('chat_result');
+    const input = document.getElementById('chat_input');
+    const message = input.value.trim();
+    if (!message) {
+        setTextResult(result, 'Entrez un message.', 'warn');
+        return;
+    }
+    setLoading(result, 'Envoi du message...');
+    const response = await fetch('/api/chat/message', {
+        method: 'POST',
+        headers: aiHeaders(),
+        body: JSON.stringify({ message, conversation_id: chatConversationId })
+    });
+    const data = await response.json();
+    if (data.success) {
+        const html = `
+            <div class="ai-chat">
+                <div class="ai-chat-line">
+                    <span class="ai-chat-label">Vous</span>
+                    <div>${escapeHtml(message)}</div>
+                </div>
+                <div class="ai-chat-line">
+                    <span class="ai-chat-label">Assistant</span>
+                    <div>${escapeHtml(data.response || '')}</div>
+                </div>
+            </div>`;
+        setResult(result, html, 'info');
+        input.value = '';
+    } else {
+        setTextResult(result, data.message || data.error || 'Erreur', 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const filterButtons = Array.from(document.querySelectorAll('[data-ai-filter]'));
+    const searchInput = document.getElementById('ai-search');
+    const sections = Array.from(document.querySelectorAll('.ai-section'));
+    const emptyState = document.getElementById('ai-empty-state');
+    let activeFilter = 'all';
+
+    const applyFilters = () => {
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        let visibleCount = 0;
+
+        sections.forEach(section => {
+            const category = section.dataset.category;
+            const sectionAllowed = activeFilter === 'all' || activeFilter === category;
+            let visibleInSection = 0;
+
+            const cards = Array.from(section.querySelectorAll('.ai-tool-card'));
+            cards.forEach(card => {
+                const title = card.querySelector('.ai-tool-title');
+                const text = (title?.textContent || '').toLowerCase();
+                const matchesQuery = !query || text.includes(query);
+                const shouldShow = sectionAllowed && matchesQuery;
+                card.classList.toggle('hidden', !shouldShow);
+                if (shouldShow) {
+                    visibleInSection += 1;
+                    visibleCount += 1;
+                }
+            });
+
+            section.classList.toggle('hidden', visibleInSection === 0);
+        });
+
+        if (emptyState) {
+            emptyState.classList.toggle('hidden', visibleCount > 0);
+        }
+    };
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilter = btn.dataset.aiFilter || 'all';
+            applyFilters();
+        });
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+    }
+
+    applyFilters();
+});
+</script>
+{% endblock %}

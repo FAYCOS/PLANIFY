@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.nom }} - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-detail-header">
+        <div>
+            <p class="finance-eyebrow">Client</p>
+            <h1 class="finance-detail-title">{{ client.nom }}</h1>
+            <p class="finance-subtitle">{{ client.categories or 'Client actif' }}</p>
+        </div>
+        <div class="finance-detail-actions">
+            <a href="{{ url_for('modifier_client', client_id=client.id) }}" class="btn btn-outline-primary">Modifier</a>
+            <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+    </div>
+
+    <div class="finance-grid">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Contacts</h5></div>
+            <div class="card-body">
+                {% if client.contacts %}
+                    {% for contact in client.contacts %}
+                    <div class="contact-card">
+                        <div class="fw-semibold">{{ contact.nom or 'Contact' }}</div>
+                        {% if contact.role %}<div class="finance-meta">{{ contact.role }}</div>{% endif %}
+                        {% if contact.email %}<div>{{ contact.email }}</div>{% endif %}
+                        {% if contact.telephone %}<div>{{ contact.telephone }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted">Aucun contact enregistré.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Notes</h5></div>
+            <div class="card-body">
+                {{ client.notes or '—' }}
+            </div>
+        </div>
+    </div>
+
+    <div class="finance-grid">
+        <div class="finance-card finance-table-card">
+            <div class="card-header"><h5 class="mb-0">Factures récentes</h5></div>
+            <div class="table-responsive">
+                <table class="table finance-table scan-aligned-table scan-cols-4" data-no-contextbox="true">
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Date</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for facture in factures %}
+                        <tr>
+                            <td><a href="{{ url_for('detail_facture', facture_id=facture.id) }}">{{ facture.numero }}</a></td>
+                            <td>{{ facture.date_creation.strftime('%d/%m/%Y') if facture.date_creation else '-' }}</td>
+                            <td>{{ "%.2f"|format(facture.montant_ttc or 0) }} €</td>
+                            <td>{{ facture.statut|replace('_',' ')|title }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center text-muted">Aucune facture.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="finance-card finance-table-card">
+            <div class="card-header"><h5 class="mb-0">Devis récents</h5></div>
+            <div class="table-responsive">
+                <table class="table finance-table scan-aligned-table scan-cols-4" data-no-contextbox="true">
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Date</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for devis in devis_list %}
+                        <tr>
+                            <td><a href="{{ url_for('detail_devis', devis_id=devis.id) }}">{{ devis.numero }}</a></td>
+                            <td>{{ devis.date_creation.strftime('%d/%m/%Y') if devis.date_creation else '-' }}</td>
+                            <td>{{ "%.2f"|format(devis.montant_ttc or 0) }} €</td>
+                            <td>{{ devis.statut|replace('_',' ')|title }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center text-muted">Aucun devis.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

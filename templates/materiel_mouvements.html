@@ -1,0 +1,713 @@
+{% extends "base.html" %}
+
+{% block title %}Mouvements équipement{% endblock %}
+{% block page_title %}Scanner sortie / retour{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <h3 style="margin:0;">
+            <i class="fas fa-barcode"></i>
+            Mouvements équipement (batch)
+        </h3>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="setMode('sortie')">
+                <i class="fas fa-arrow-up"></i> Sortie
+            </button>
+            <button class="btn btn-secondary" onclick="setMode('retour')">
+                <i class="fas fa-arrow-down"></i> Retour
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="mode-indicator" class="mode-indicator is-sortie" aria-live="polite">
+            <span class="mode-dot" aria-hidden="true"></span>
+            <span class="mode-label">Mode en cours</span>
+            <strong id="mode-indicator-label">Départ (Sortie)</strong>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; margin-bottom:16px;">
+            <div style="flex:1; min-width:220px;">
+                <label class="form-label">Mission (sortie)</label>
+                <select id="prestation_sortie" class="form-control form-select">
+                    <option value="">-- Choisir une mission du jour --</option>
+                    {% for p in prestations_actives %}
+                    <option value="{{ p.id }}">{{ p.client }} · {{ p.date_debut.strftime('%d/%m/%Y') }} {{ p.heure_debut.strftime('%H:%M') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex:1; min-width:220px;">
+                <label class="form-label">Mission (retour)</label>
+                <select id="prestation_retour" class="form-control form-select">
+                    <option value="">-- Choisir une mission terminée --</option>
+                    {% for p in prestations_terminees %}
+                    <option value="{{ p.id }}">{{ p.client }} · {{ p.date_debut.strftime('%d/%m/%Y') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex:1; min-width:220px;">
+                <label class="form-label">Site retour</label>
+                <select id="local_retour" class="form-control form-select">
+                    <option value="">-- Choisir un site --</option>
+                    {% for l in locals %}
+                    <option value="{{ l.id }}">{{ l.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin-bottom:20px;">
+            <button class="btn btn-primary" onclick="activerScanner()">
+                <i class="fas fa-camera"></i> Scanner
+            </button>
+            <button class="btn btn-secondary" onclick="arreterScanner()">
+                <i class="fas fa-stop"></i> Stop caméra
+            </button>
+            <button class="btn btn-secondary" onclick="exportCsv()">
+                <i class="fas fa-file-export"></i> Export CSV
+            </button>
+            <div style="flex:1; min-width:240px;">
+                <label class="form-label">Ajouter manuellement (plusieurs SN, 1 par ligne)</label>
+                <textarea id="batch_input" class="form-control" rows="2" placeholder="SN-001&#10;SN-002"></textarea>
+            </div>
+            <button class="btn btn-secondary" onclick="addBatchInput()">
+                <i class="fas fa-plus"></i> Ajouter
+            </button>
+        </div>
+
+        <div id="scanner-zone" style="display:none; margin-bottom:16px;">
+            <div id="reader" style="width:100%; max-width:640px; margin:0 auto;"></div>
+        </div>
+
+        <div id="message-zone" class="mb-3"></div>
+
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px;">
+            <div style="flex:1; min-width:220px;">
+                <label class="form-label">Filtrer par catégorie</label>
+                <input id="filter_categorie" class="form-control" type="text" placeholder="Audio, Eclairage...">
+            </div>
+            <div style="flex:1; min-width:220px;">
+                <label class="form-label">Filtrer par site</label>
+                <input id="filter_local" class="form-control" type="text" placeholder="Nom du site">
+            </div>
+            <div style="flex:1; min-width:220px;">
+                <label class="form-label">Recherche</label>
+                <input id="filter_search" class="form-control" type="text" placeholder="Nom ou SN">
+            </div>
+            <button class="btn btn-secondary" onclick="resetFilters()">
+                <i class="fas fa-eraser"></i> Reset
+            </button>
+        </div>
+
+        <div class="scan-grid">
+            <div class="scan-grid-head">
+                <div>SN / Code</div>
+                <div>Nom</div>
+                <div>Catégorie</div>
+                <div>Site</div>
+                <div>Qté</div>
+                <div>Statut</div>
+                <div></div>
+            </div>
+            <div id="scan-list" class="scan-grid-body"></div>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:12px;">
+            <button class="btn btn-secondary" onclick="clearList()">Vider la liste</button>
+            <button class="btn btn-primary" onclick="submitBatch()">
+                <i class="fas fa-check"></i> Sortir / Retourner l'équipement
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h4 class="mb-0"><i class="fas fa-history"></i> Derniers mouvements</h4>
+    </div>
+    <div class="card-body">
+        {% if recent_movements %}
+        <div class="table-responsive">
+            <table class="table table-sm scan-aligned-table scan-cols-5">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Équipement</th>
+                        <th>Qté</th>
+                        <th>Mission</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in recent_movements %}
+                    <tr>
+                        <td>{{ m.date_mouvement.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ m.type_mouvement }}</td>
+                        <td>{{ m.materiel.nom }}</td>
+                        <td>{{ m.quantite }}</td>
+                        <td>{{ m.prestation.client if m.prestation else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-muted">Aucun mouvement récent.</div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+let html5QrcodeScanner = null;
+let mode = 'sortie';
+let scanItems = [];
+let lastScan = { value: null, at: 0 };
+let validateTimer = null;
+let audioCtx = null;
+let audioUnlocked = false;
+
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+function ensureAudio() {
+    const AudioContextRef = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextRef) return null;
+    if (!audioCtx) {
+        audioCtx = new AudioContextRef();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+}
+
+function playBeep(type = 'ok') {
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+        ctx.resume().then(() => playBeep(type)).catch(() => {});
+        return;
+    }
+    const now = ctx.currentTime;
+    const makeTone = (freq, start, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type === 'error' ? 'square' : 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.12, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + duration + 0.01);
+    };
+    if (type === 'error') {
+        makeTone(240, now, 0.12);
+        makeTone(240, now + 0.16, 0.12);
+    } else {
+        makeTone(880, now, 0.12);
+    }
+}
+
+function unlockAudio() {
+    if (audioUnlocked) return;
+    const ctx = ensureAudio();
+    if (ctx) {
+        audioUnlocked = true;
+    }
+}
+
+function setMode(newMode) {
+    if (mode === newMode) {
+        return;
+    }
+    if (scanItems.length > 0) {
+        const proceed = confirm('Changer de mode va vider la liste scannée. Continuer ?');
+        if (!proceed) {
+            return;
+        }
+        clearList();
+    }
+    mode = newMode;
+    const indicator = document.getElementById('mode-indicator');
+    const labelEl = document.getElementById('mode-indicator-label');
+    const label = newMode === 'sortie' ? 'Départ (Sortie)' : 'Retour';
+    if (labelEl) {
+        labelEl.textContent = label;
+    }
+    indicator.classList.toggle('is-sortie', newMode === 'sortie');
+    indicator.classList.toggle('is-retour', newMode === 'retour');
+    arreterScanner();
+}
+
+async function requestCameraAccess() {
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+        showMessage('⚠️ La caméra nécessite HTTPS sur mobile.', 'warning');
+        return false;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showMessage('❌ Caméra indisponible.', 'danger');
+        return false;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (err) {
+        showMessage('❌ Permission caméra refusée.', 'danger');
+        return false;
+    }
+}
+
+function activerScanner() {
+    if (!ensureContext()) {
+        return;
+    }
+    ensureAudio();
+    playBeep('ok');
+    requestCameraAccess().then(hasAccess => {
+        if (!hasAccess) return;
+        document.getElementById('scanner-zone').style.display = 'block';
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+        html5QrcodeScanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            onScanSuccess,
+            () => {}
+        ).catch(() => {
+            showMessage('❌ Impossible d\'accéder à la caméra.', 'danger');
+        });
+    });
+}
+
+function arreterScanner() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            document.getElementById('scanner-zone').style.display = 'none';
+        });
+    }
+}
+
+function onScanSuccess(decodedText) {
+    const now = Date.now();
+    const cleanedValue = (decodedText || '').trim();
+    if (cleanedValue && cleanedValue === lastScan.value && now - lastScan.at < 1200) {
+        return;
+    }
+    lastScan = { value: cleanedValue, at: now };
+    const cleaned = decodedText.trim();
+    if (cleaned.includes('/materiels/scan/selection/')) {
+        const id = cleaned.split('/materiels/scan/selection/')[1].split('/')[0];
+        return addById(id);
+    }
+    if (cleaned.includes('/materiels/qrcode/scan/')) {
+        const id = cleaned.split('/materiels/qrcode/scan/')[1].split('/')[0];
+        return addById(id);
+    }
+    addBySerial(cleaned);
+}
+
+function addBatchInput() {
+    if (!ensureContext()) {
+        return;
+    }
+    ensureAudio();
+    const textarea = document.getElementById('batch_input');
+    const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
+    lines.forEach(code => addBySerial(code));
+    textarea.value = '';
+}
+
+function addById(id) {
+    if (!ensureContext()) {
+        return;
+    }
+    fetch(`/api/materiels/detail/${encodeURIComponent(id)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                addItem(data.materiel.numero_serie || data.materiel.code_barre || String(id), data.materiel);
+            } else {
+                showMessage('❌ Équipement introuvable.', 'danger');
+            }
+        })
+        .catch(() => showMessage('❌ Erreur de recherche.', 'danger'));
+}
+
+function addBySerial(code) {
+    if (!ensureContext()) {
+        return;
+    }
+    const cleaned = (code || '').trim();
+    if (!cleaned) {
+        showMessage('❌ Code vide.', 'danger');
+        return;
+    }
+    fetch(`/api/materiels/lookup-serial/${encodeURIComponent(cleaned)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                addItem(cleaned, data.materiel);
+            } else {
+                showMessage(`❌ Code introuvable: ${cleaned}`, 'danger');
+            }
+        })
+        .catch(() => showMessage(`❌ Erreur de recherche pour ${cleaned}`, 'danger'));
+}
+
+function addItem(code, materiel) {
+    const existing = scanItems.find(i => i.materiel_id === materiel.id);
+    if (existing) {
+        existing.quantite += 1;
+    } else {
+        scanItems.push({
+            code: code,
+            materiel_id: materiel.id,
+            nom: materiel.nom,
+            categorie: materiel.categorie || '',
+            local: materiel.local || '',
+            quantite: 1,
+            status: 'Validation…',
+            status_level: 'pending',
+            status_pending: true,
+            _validate_id: 0
+        });
+    }
+    playBeep('ok');
+    renderList();
+    scheduleValidateAll();
+}
+
+function renderList() {
+    const list = document.getElementById('scan-list');
+    const filterCategorie = document.getElementById('filter_categorie').value.toLowerCase();
+    const filterLocal = document.getElementById('filter_local').value.toLowerCase();
+    const filterSearch = document.getElementById('filter_search').value.toLowerCase();
+
+    list.innerHTML = '';
+    scanItems
+        .filter(item => {
+            if (filterCategorie && !item.categorie.toLowerCase().includes(filterCategorie)) return false;
+            if (filterLocal && !item.local.toLowerCase().includes(filterLocal)) return false;
+            if (filterSearch && !(item.nom.toLowerCase().includes(filterSearch) || item.code.toLowerCase().includes(filterSearch))) return false;
+            return true;
+        })
+        .forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'scan-row';
+            const code = escapeHtml(item.code);
+            const nom = escapeHtml(item.nom);
+            const categorie = escapeHtml(item.categorie || '-');
+            const local = escapeHtml(item.local || '-');
+            row.innerHTML = `
+                <div class="scan-cell" title="${code}">${code}</div>
+                <div class="scan-cell" title="${nom}">${nom}</div>
+                <div class="scan-cell" title="${categorie}">${categorie}</div>
+                <div class="scan-cell" title="${local}">${local}</div>
+                <div class="scan-cell scan-qty">
+                    <input type="number" min="1" value="${item.quantite}" class="form-control form-control-sm"
+                        onchange="updateQty(${item.materiel_id}, this.value)">
+                </div>
+                <div class="scan-cell scan-status">${renderStatus(item)}</div>
+                <div class="scan-cell scan-actions">
+                    <button class="btn btn-sm btn-danger" onclick="removeItem(${item.materiel_id})" aria-label="Retirer">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            list.appendChild(row);
+        });
+}
+
+function updateQty(id, value) {
+    const qty = Math.max(1, parseInt(value, 10) || 1);
+    const item = scanItems.find(i => i.materiel_id === id);
+    if (item) {
+        item.quantite = qty;
+        item.status_pending = true;
+        item.status_level = 'pending';
+        item.status = 'Validation…';
+    }
+    scheduleValidateAll();
+    renderList();
+}
+
+function removeItem(id) {
+    scanItems = scanItems.filter(i => i.materiel_id !== id);
+    renderList();
+}
+
+function clearList() {
+    scanItems = [];
+    renderList();
+}
+
+function resetFilters() {
+    document.getElementById('filter_categorie').value = '';
+    document.getElementById('filter_local').value = '';
+    document.getElementById('filter_search').value = '';
+    renderList();
+}
+
+function exportCsv() {
+    if (!scanItems.length) {
+        showMessage('⚠️ Liste vide', 'warning');
+        return;
+    }
+    const rows = [['code', 'nom', 'categorie', 'local', 'quantite']].concat(
+        scanItems.map(i => [i.code, i.nom, i.categorie, i.local, i.quantite])
+    );
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/\"/g, '""')}"`).join(',')).join('\\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `scan_${mode}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function submitBatch() {
+    if (!scanItems.length) {
+        showMessage('⚠️ Aucun matériel scanné.', 'warning');
+        return;
+    }
+    if (scanItems.some(i => i.status_pending)) {
+        showMessage('⏳ Validation en cours, veuillez patienter.', 'warning');
+        return;
+    }
+    if (scanItems.some(i => i.status_level === 'error')) {
+        showMessage('❌ Des équipements sont bloqués. Corrigez avant de valider.', 'danger');
+        return;
+    }
+    const items = scanItems.map(i => ({ materiel_id: i.materiel_id, quantite: i.quantite }));
+
+    if (mode === 'sortie') {
+        const prestationId = document.getElementById('prestation_sortie').value;
+        if (!prestationId) {
+            showMessage('❌ Choisissez une mission du jour.', 'danger');
+            return;
+        }
+        if (!confirm(`Confirmer la sortie de ${items.length} matériel(s) ?`)) {
+            return;
+        }
+        const headers = { 'Content-Type': 'application/json' };
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+        fetch('/api/materiel/sortie-batch', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ prestation_id: prestationId, items })
+        })
+            .then(r => r.json())
+            .then(handleBatchResponse)
+            .catch(() => showMessage('❌ Erreur lors de la sortie.', 'danger'));
+    } else {
+        const prestationId = document.getElementById('prestation_retour').value;
+        const localRetourId = document.getElementById('local_retour').value;
+        if (!prestationId || !localRetourId) {
+            showMessage('❌ Choisissez une mission terminée et un site.', 'danger');
+            return;
+        }
+        if (!confirm(`Confirmer le retour de ${items.length} matériel(s) ?`)) {
+            return;
+        }
+        const headers = { 'Content-Type': 'application/json' };
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+        fetch('/api/materiel/retour-batch', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ prestation_id: prestationId, local_retour_id: localRetourId, items })
+        })
+            .then(r => r.json())
+            .then(handleBatchResponse)
+            .catch(() => showMessage('❌ Erreur lors du retour.', 'danger'));
+    }
+}
+
+function handleBatchResponse(data) {
+    if (!data.success) {
+        showMessage(`❌ ${data.error || 'Erreur inconnue'}`, 'danger');
+        return;
+    }
+    const errors = (data.results || []).filter(r => !r.success);
+    const success = (data.results || []).filter(r => r.success);
+    if (errors.length) {
+        showMessage(`⚠️ ${success.length} OK, ${errors.length} erreurs.`, 'warning');
+    } else {
+        showMessage(`✅ ${success.length} mouvements enregistrés.`, 'success');
+        clearList();
+    }
+}
+
+function showMessage(text, level) {
+    const zone = document.getElementById('message-zone');
+    zone.innerHTML = `<div class="alert alert-${level}">${text}</div>`;
+}
+
+function getContext(silent = false) {
+    if (mode === 'sortie') {
+        const prestationId = document.getElementById('prestation_sortie').value;
+        if (!prestationId) {
+            if (!silent) showMessage('❌ Choisissez une mission du jour avant de scanner.', 'danger');
+            return null;
+        }
+        return { prestationId };
+    }
+    const prestationId = document.getElementById('prestation_retour').value;
+    const localRetourId = document.getElementById('local_retour').value;
+    if (!prestationId || !localRetourId) {
+        if (!silent) showMessage('❌ Choisissez une mission terminée et un site de retour.', 'danger');
+        return null;
+    }
+    return { prestationId, localRetourId };
+}
+
+function ensureContext() {
+    return !!getContext(false);
+}
+
+function scheduleValidateAll() {
+    if (validateTimer) {
+        clearTimeout(validateTimer);
+    }
+    validateTimer = setTimeout(validateAll, 180);
+}
+
+function validateAll() {
+    const ctx = getContext(true);
+    if (!ctx) {
+        scanItems.forEach(item => {
+            item.status_level = 'error';
+            item.status = 'Contexte manquant';
+            item.status_pending = false;
+        });
+        renderList();
+        return;
+    }
+    scanItems.forEach(item => validateItem(item, ctx));
+}
+
+function validateItem(item, ctx) {
+    item._validate_id = (item._validate_id || 0) + 1;
+    const currentId = item._validate_id;
+    const prevLevel = item.status_level;
+    item.status_pending = true;
+    item.status_level = 'pending';
+    item.status = 'Validation…';
+    renderList();
+
+    const payload = {
+        mode: mode,
+        materiel_id: item.materiel_id,
+        prestation_id: ctx.prestationId,
+        quantite: item.quantite
+    };
+    if (mode === 'retour') {
+        payload.local_retour_id = ctx.localRetourId;
+    }
+    const headers = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+    }
+    headers['Accept'] = 'application/json';
+    fetch('/api/materiel/validate-movement', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(payload)
+    })
+        .then(async r => {
+            const text = await r.text();
+            let data = null;
+            if (text) {
+                try {
+                    data = JSON.parse(text);
+                } catch (err) {
+                    data = null;
+                }
+            }
+            if (!data || typeof data !== 'object') {
+                const authIssue = r.status === 401 || r.status === 403;
+                const message = authIssue ? 'Session expirée, reconnectez-vous.' : `Erreur serveur (${r.status})`;
+                data = { success: false, ok: false, message };
+            }
+            return { ok: r.ok, status: r.status, data };
+        })
+        .then(({ data, status }) => {
+            if (item._validate_id !== currentId) return;
+            item.status_pending = false;
+            if (data.success && data.ok) {
+                item.status_level = 'ok';
+                item.status = data.message || 'OK';
+            } else {
+                item.status_level = 'error';
+                item.status = data.message || data.error || (status === 401 || status === 403 ? 'Session expirée, reconnectez-vous.' : 'Erreur');
+            }
+            if (item.status_level === 'error' && prevLevel !== 'error') {
+                playBeep('error');
+            }
+            renderList();
+        })
+        .catch(() => {
+            if (item._validate_id !== currentId) return;
+            item.status_pending = false;
+            item.status_level = 'error';
+            item.status = 'Erreur validation';
+            if (prevLevel !== 'error') {
+                playBeep('error');
+            }
+            renderList();
+        });
+}
+
+function renderStatus(item) {
+    const text = escapeHtml(item.status || '-');
+    if (item.status_level === 'ok') {
+        return `<span class="status-chip ok"><span class="dot"></span>${text}</span>`;
+    }
+    if (item.status_level === 'error') {
+        return `<span class="status-chip error"><span class="dot"></span>${text}</span>`;
+    }
+    if (item.status_level === 'pending') {
+        return `<span class="status-chip pending"><span class="dot"></span>${text}</span>`;
+    }
+    return `<span class="status-chip muted">${text}</span>`;
+}
+
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (m) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+    });
+}
+
+document.getElementById('filter_categorie').addEventListener('input', renderList);
+document.getElementById('filter_local').addEventListener('input', renderList);
+document.getElementById('filter_search').addEventListener('input', renderList);
+document.getElementById('prestation_sortie').addEventListener('change', () => {
+    if (mode === 'sortie') scheduleValidateAll();
+});
+document.getElementById('prestation_retour').addEventListener('change', () => {
+    if (mode === 'retour') scheduleValidateAll();
+});
+document.getElementById('local_retour').addEventListener('change', () => {
+    if (mode === 'retour') scheduleValidateAll();
+});
+document.addEventListener('click', unlockAudio, { once: true, capture: true });
+document.addEventListener('keydown', unlockAudio, { once: true, capture: true });
+</script>
+{% endblock %}

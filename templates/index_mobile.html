@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - Planify{% endblock %}
+
+{% block extra_css %}
+<!-- Mobile CSS déjà chargé dans base.html -->
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-mobile">
+
+    <div class="mobile-hero">
+        <div class="mobile-hero-top">
+            <div>
+                <div class="mobile-hero-kicker">Opérations</div>
+                <div class="mobile-hero-title">Bonjour {{ current_user.prenom or current_user.username }}</div>
+                <div class="mobile-hero-meta">
+                    {{ stats.prestations_mois }} missions ce mois · {{ stats.materiels_dispo }} équipements dispo
+                </div>
+            </div>
+            <div class="mobile-hero-badge">Live</div>
+        </div>
+    </div>
+
+    <div class="mobile-action-row">
+        <button class="mobile-pill primary" onclick="window.location.href='/prestations/nouvelle'">
+            <i class="fas fa-plus"></i> Nouvelle mission
+        </button>
+        <button class="mobile-pill" onclick="window.location.href='/materiels'">
+            <i class="fas fa-box"></i> Équipement
+        </button>
+        <button class="mobile-pill" onclick="window.location.href='/materiels/qrcode/scanner'">
+            <i class="fas fa-qrcode"></i> Scanner
+        </button>
+        <button class="mobile-pill" onclick="window.location.href='/calendrier'">
+            <i class="fas fa-calendar"></i> Agenda
+        </button>
+    </div>
+    
+    <!-- Stats rapides -->
+    <div class="mobile-stats-grid">
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-value">{{ stats.prestations_mois }}</div>
+            <div class="mobile-stat-label">Ce mois</div>
+        </div>
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-value">{{ stats.ca_mois|int }}€</div>
+            <div class="mobile-stat-label">Chiffre d'affaires</div>
+        </div>
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-value">{{ stats.materiels_dispo }}</div>
+            <div class="mobile-stat-label">Équipements dispo</div>
+        </div>
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-value">{{ stats.djs_actifs }}</div>
+            <div class="mobile-stat-label">Prestataires actifs</div>
+        </div>
+    </div>
+    
+    <!-- Suggestions IA -->
+    <div class="mobile-card mobile-ai-card">
+        <div class="mobile-card-header">
+            <h3 class="mobile-card-title">🤖 Assistant IA</h3>
+            <span class="mobile-card-badge mobile-ai-badge">Nouveau</span>
+        </div>
+        <p class="mobile-ai-text">L'IA analyse vos données pour vous aider</p>
+        <button class="mobile-btn mobile-ai-btn" onclick="loadAISuggestions()">
+            <i class="fas fa-magic"></i> Voir les suggestions
+        </button>
+    </div>
+    
+    <!-- Prévisions CA -->
+    <div class="mobile-card">
+        <div class="mobile-card-header">
+            <h3 class="mobile-card-title">📊 Prévisions (3 mois)</h3>
+            <button class="mobile-btn-icon" onclick="refreshForecasts()">
+                <i class="fas fa-sync"></i>
+            </button>
+        </div>
+        <div id="forecasts-container">
+            <div class="mobile-skeleton mobile-skeleton-card"></div>
+        </div>
+    </div>
+    
+    <!-- Actions rapides -->
+    <div class="mobile-card">
+        <h3 class="mobile-card-title" style="margin-bottom: 16px;">⚡ Commandes rapides</h3>
+        <div class="mobile-quick-grid">
+            <button class="mobile-quick-card" onclick="window.location.href='/reservations'">
+                <div class="mobile-quick-icon"><i class="fas fa-calendar-check"></i></div>
+                <div class="mobile-quick-title">Réservations</div>
+                <div class="mobile-quick-sub">Valider, assigner</div>
+            </button>
+            <button class="mobile-quick-card" onclick="window.location.href='/facturation'">
+                <div class="mobile-quick-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                <div class="mobile-quick-title">Facturation</div>
+                <div class="mobile-quick-sub">Devis & factures</div>
+            </button>
+            <button class="mobile-quick-card" onclick="window.location.href='/locals'">
+                <div class="mobile-quick-icon"><i class="fas fa-warehouse"></i></div>
+                <div class="mobile-quick-title">Sites</div>
+                <div class="mobile-quick-sub">Stocks & zones</div>
+            </button>
+            <button class="mobile-quick-card" onclick="window.location.href='/djs'">
+                <div class="mobile-quick-icon"><i class="fas fa-headphones"></i></div>
+                <div class="mobile-quick-title">Prestataires</div>
+                <div class="mobile-quick-sub">Disponibilités</div>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Prestations à venir -->
+    <div class="mobile-card">
+        <h3 class="mobile-card-title" style="margin-bottom: 16px;">📅 Prochaines missions</h3>
+        
+        {% if prestations_prochaines %}
+        <ul class="mobile-list">
+            {% for p in prestations_prochaines %}
+            {% set status_bg = 'rgba(31, 90, 122, 0.12)' if p.statut == 'confirmee' else 'rgba(183, 121, 31, 0.16)' %}
+            {% set status_color = 'var(--mobile-teal)' if p.statut == 'confirmee' else 'var(--mobile-amber)' %}
+            <li class="mobile-swipeable mobile-list-item" onclick="window.location.href='/prestations/{{ p.id }}'">
+                <div class="mobile-list-icon" style="background: {{ status_bg }}; color: {{ status_color }};">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="mobile-list-content">
+                    <div class="mobile-list-title">{{ p.nom }}</div>
+                    <div class="mobile-list-subtitle">
+                        {{ p.date.strftime('%d/%m/%Y') }} à {{ p.heure_debut if p.heure_debut else '--:--' }}
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right mobile-list-action"></i>
+                
+                <!-- Actions swipe -->
+                <div class="mobile-swipe-actions">
+                    <button class="mobile-swipe-btn edit" onclick="event.stopPropagation(); window.location.href='/prestations/{{ p.id }}/modifier'">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="mobile-empty-state">
+            <div class="mobile-empty-icon">📅</div>
+            <div class="mobile-empty-title">Aucune mission</div>
+            <div class="mobile-empty-text">Créez votre première mission</div>
+            <button class="mobile-btn mobile-btn-primary" onclick="window.location.href='/prestations/nouvelle'" style="margin-top: 16px;">
+                <i class="fas fa-plus"></i> Créer
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Matériel en maintenance -->
+    {% if materiels_maintenance %}
+    <div class="mobile-card mobile-alert-card">
+        <div class="mobile-card-header">
+            <h3 class="mobile-card-title">⚠️ Équipement en maintenance</h3>
+            <span class="mobile-card-badge mobile-alert-badge">{{ materiels_maintenance|length }}</span>
+        </div>
+        <ul class="mobile-list">
+            {% for m in materiels_maintenance %}
+            <li class="mobile-list-item">
+                <div class="mobile-list-icon mobile-alert-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="mobile-list-content">
+                    <div class="mobile-list-title">{{ m.nom }}</div>
+                    <div class="mobile-list-subtitle">{{ m.local.nom if m.local else 'Sans local' }}</div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+</div>
+
+<!-- Floating Action Button -->
+<button class="mobile-fab" onclick="window.location.href='/prestations/nouvelle'" title="Nouvelle mission">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- Modal suggestions IA -->
+<div id="ai-suggestions-modal" class="mobile-modal">
+    <div class="mobile-modal-handle"></div>
+    <h2>🤖 Suggestions IA</h2>
+    <div id="ai-suggestions-content">
+        <div class="mobile-skeleton mobile-skeleton-card"></div>
+        <div class="mobile-skeleton mobile-skeleton-card"></div>
+        <div class="mobile-skeleton mobile-skeleton-card"></div>
+    </div>
+    <button class="mobile-btn mobile-btn-secondary" data-modal-close style="margin-top: 16px;">Fermer</button>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ==================== CHARGEMENT PRÉVISIONS IA ====================
+async function refreshForecasts() {
+    const container = document.getElementById('forecasts-container');
+    container.innerHTML = '<div class="mobile-skeleton mobile-skeleton-card"></div>';
+    
+    try {
+        const response = await fetch('/api/ai/forecast-revenue?mois=3');
+        const data = await response.json();
+        
+        if (data.success && data.forecasts.length > 0) {
+            let html = '<div style="display: grid; gap: 12px;">';
+            
+            data.forecasts.forEach(forecast => {
+                const confiance = forecast.confiance === 'moyenne' ? '🟢' : '🟡';
+                html += `
+                    <div style="padding: 12px; background: #f5f5f5; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 600;">${forecast.mois}</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 2px;">${confiance} ${forecast.confiance}</div>
+                        </div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--mobile-teal);">
+                            ${Math.round(forecast.prevision).toLocaleString()}€
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            
+            if (window.mobileApp) {
+                mobileApp.showToast('✅ Prévisions actualisées', 2000);
+                mobileApp.vibrate(10);
+            }
+        } else {
+            container.innerHTML = `
+                <div class="mobile-empty-state">
+                    <div class="mobile-empty-icon">📊</div>
+                    <div class="mobile-empty-text">Pas assez de données pour faire des prévisions</div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erreur prévisions:', error);
+        container.innerHTML = `
+            <div class="mobile-empty-state">
+                <div class="mobile-empty-icon">⚠️</div>
+                <div class="mobile-empty-text">Erreur de chargement</div>
+            </div>
+        `;
+        
+        if (window.mobileApp) {
+            mobileApp.showToast('❌ Erreur de chargement', 2000);
+        }
+    }
+}
+
+// ==================== SUGGESTIONS IA ====================
+async function loadAISuggestions() {
+    if (window.mobileApp) {
+        mobileApp.showModal('ai-suggestions-modal');
+    }
+    
+    const container = document.getElementById('ai-suggestions-content');
+    
+    try {
+        // Charger différentes suggestions
+        const [forecasts, optimize] = await Promise.all([
+            fetch('/api/ai/forecast-revenue?mois=1').then(r => r.json()),
+            fetch('/api/ai/optimize-schedule', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    date_debut: new Date().toISOString().split('T')[0],
+                    date_fin: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]
+                })
+            }).then(r => r.json())
+        ]);
+        
+        let html = '<ul class="mobile-list">';
+        
+        // Suggestion CA
+        if (forecasts.success && forecasts.forecasts[0]) {
+            const ca = Math.round(forecasts.forecasts[0].prevision);
+            html += `
+                <li class="mobile-list-item">
+                    <div class="mobile-list-icon" style="background: rgba(47,133,90,0.12); color: var(--mobile-teal);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="mobile-list-content">
+                        <div class="mobile-list-title">Objectif CA du mois</div>
+                        <div class="mobile-list-subtitle">Prévision : ${ca.toLocaleString()}€</div>
+                    </div>
+                </li>
+            `;
+        }
+        
+        // Suggestions d'optimisation
+        if (optimize.success && optimize.suggestions.length > 0) {
+            optimize.suggestions.forEach(sugg => {
+                html += `
+                    <li class="mobile-list-item">
+                        <div class="mobile-list-icon" style="background: rgba(183,121,31,0.16); color: var(--mobile-amber);">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="mobile-list-content">
+                            <div class="mobile-list-title">Optimisation planning</div>
+                            <div class="mobile-list-subtitle">${sugg.message}</div>
+                        </div>
+                    </li>
+                `;
+            });
+        }
+        
+        // Suggestion générale
+        html += `
+            <li class="mobile-list-item">
+                    <div class="mobile-list-icon" style="background: rgba(31,122,115,0.12); color: var(--mobile-teal);">
+                    <i class="fas fa-magic"></i>
+                </div>
+                <div class="mobile-list-content">
+                    <div class="mobile-list-title">Auto-remplissage activé</div>
+                    <div class="mobile-list-subtitle">L'IA remplit automatiquement vos formulaires</div>
+                </div>
+            </li>
+        `;
+        
+        html += '</ul>';
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Erreur suggestions IA:', error);
+        container.innerHTML = `
+            <div class="mobile-empty-state">
+                <div class="mobile-empty-icon">⚠️</div>
+                <div class="mobile-empty-text">Erreur de chargement des suggestions</div>
+            </div>
+        `;
+    }
+}
+
+// Charger les prévisions au chargement de la page
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refreshForecasts);
+} else {
+    refreshForecasts();
+}
+</script>
+{% endblock %}

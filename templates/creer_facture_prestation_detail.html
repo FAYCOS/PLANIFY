@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Créer Facture - {{ prestation.client }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('facturation') }}">Facturation</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('creer_facture_depuis_prestation') }}">Créer depuis Mission</a></li>
+                        <li class="breadcrumb-item active">Détail</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Créer Facture - {{ prestation.client }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations de la prestation -->
+        <div class="col-lg-8">
+            <div class="card finance-section">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-music me-2"></i>
+                        Informations de la Mission
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Client <span class="badge bg-success">Données Mission</span></h6>
+                            <p class="mb-3">
+                                <strong>{{ prestation.client }}</strong><br>
+                                {% if prestation.client_email %}
+                                    <i class="fas fa-envelope me-1"></i> {{ prestation.client_email }}<br>
+                                {% elif devis.client_email %}
+                                    <i class="fas fa-envelope me-1"></i> {{ devis.client_email }} <small class="text-muted">(devis)</small><br>
+                                {% endif %}
+                                {% if prestation.client_telephone %}
+                                    <i class="fas fa-phone me-1"></i> {{ prestation.client_telephone }}<br>
+                                {% elif devis.client_telephone %}
+                                    <i class="fas fa-phone me-1"></i> {{ devis.client_telephone }} <small class="text-muted">(devis)</small><br>
+                                {% endif %}
+                                {% if devis.client_adresse %}
+                                    <i class="fas fa-map-marker-alt me-1"></i> {{ devis.client_adresse }} <small class="text-muted">(devis)</small>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Événement</h6>
+                            <p class="mb-3">
+                                <strong>{{ prestation.client }}</strong><br>
+                                <i class="fas fa-calendar me-1"></i> {{ prestation.date_debut.strftime('%d/%m/%Y') }}<br>
+                                <i class="fas fa-clock me-1"></i> {{ prestation.heure_debut.strftime('%H:%M') }} - {{ prestation.heure_fin.strftime('%H:%M') }}<br>
+                                <i class="fas fa-map-marker-alt me-1"></i> {{ prestation.lieu }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if prestation.dj %}
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted">Prestataire Assigné</h6>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-info rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                <span>{{ prestation.dj.nom }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Détails du devis -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Détails du Devis ({{ devis.numero }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set tva_applicable = not (parametres and parametres.tva_non_applicable) %}
+                    {% set tva_incluse = devis.tva_incluse if devis.tva_incluse is not none else True %}
+                    {% set tva_amount = devis.montant_tva if tva_applicable and tva_incluse else 0 %}
+                    {% set total_amount = devis.montant_ttc if tva_applicable and tva_incluse else devis.montant_ht %}
+                    <div class="table-responsive">
+                        <table class="table table-sm scan-aligned-table scan-cols-4">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-center">Qté</th>
+                                    <th class="text-end">Prix unitaire</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mission Prestataire ({{ devis.duree_heures }}h)</td>
+                                    <td class="text-center">{{ devis.duree_heures }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.tarif_horaire) }}€</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.tarif_horaire * devis.duree_heures) }}€</td>
+                                </tr>
+                                {% if devis.frais_transport > 0 %}
+                                <tr>
+                                    <td>Frais de transport</td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_transport) }}€</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_transport) }}€</td>
+                                </tr>
+                                {% endif %}
+                                {% if devis.frais_materiel > 0 %}
+                                <tr>
+                                    <td>Frais de équipement</td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_materiel) }}€</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_materiel) }}€</td>
+                                </tr>
+                                {% endif %}
+                                {% if devis.remise_pourcentage > 0 or devis.remise_montant > 0 %}
+                                <tr class="text-danger">
+                                    <td>
+                                        Remise
+                                        {% if devis.remise_pourcentage > 0 %}
+                                            ({{ devis.remise_pourcentage }}%)
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">-</td>
+                                    <td class="text-end">-</td>
+                                    <td class="text-end">
+                                        -{% if devis.remise_pourcentage > 0 %}{{ "%.2f"|format(devis.remise_pourcentage * devis.montant_ht / 100) }}{% else %}{{ "%.2f"|format(devis.remise_montant) }}{% endif %}€
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="3">Sous-total HT</th>
+                                    <th class="text-end">{{ "%.2f"|format(devis.montant_ht) }}€</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3">{% if tva_applicable and tva_incluse %}TVA ({{ devis.taux_tva }}%){% else %}TVA non applicable{% endif %}</th>
+                                    <th class="text-end">{{ "%.2f"|format(tva_amount) }}€</th>
+                                </tr>
+                                <tr class="table-success">
+                                    <th colspan="3">{{ 'TOTAL TTC' if tva_applicable and tva_incluse else 'TOTAL HT' }}</th>
+                                    <th class="text-end">{{ "%.2f"|format(total_amount) }}€</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire de création de facture -->
+        <div class="col-lg-4">
+            <div class="card finance-section">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Créer la Facture
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="finance-detail-header">
+            <div>
+                <p class="finance-eyebrow">Facture</p>
+                <h1 class="finance-detail-title">Facture depuis mission</h1>
+                <p class="finance-subtitle">Confirmez les détails avant création.</p>
+            </div>
+            <div class="finance-detail-actions">
+                <a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+<form method="POST">
+                        <div class="mb-3">
+                            <label for="client_siren" class="form-label">SIREN client (optionnel)</label>
+                            <input type="text" class="form-control" id="client_siren" name="client_siren" placeholder="Ex: 123 456 789">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="client_tva" class="form-label">TVA client (optionnel)</label>
+                            <input type="text" class="form-control" id="client_tva" name="client_tva" placeholder="Ex: FR12 345678901">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="numero_bon_commande" class="form-label">N° bon de commande (optionnel)</label>
+                            <input type="text" class="form-control" id="numero_bon_commande" name="numero_bon_commande" placeholder="Ex: BC-2026-001">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" name="client_professionnel" value="1" class="form-checkbox h-5 w-5 text-blue-600">
+                                <span class="text-gray-700">Client professionnel (SIREN requis)</span>
+                            </label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nature_operation" class="form-label">Nature de l’opération</label>
+                            <input type="text" class="form-control" id="nature_operation" name="nature_operation" placeholder="Prestations de services">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="adresse_livraison" class="form-label">Adresse de livraison (si différente)</label>
+                            <textarea class="form-control" id="adresse_livraison" name="adresse_livraison" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" name="tva_sur_debits" value="1" class="form-checkbox h-5 w-5 text-blue-600">
+                                <span class="text-gray-700">TVA sur les débits</span>
+                            </label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (optionnel)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Notes supplémentaires pour la facture..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="conditions_paiement" class="form-label">Conditions de Paiement</label>
+                            <textarea class="form-control" id="conditions_paiement" name="conditions_paiement" rows="2" 
+                                      placeholder="Paiement à réception de facture">Paiement à réception de facture</textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Information :</strong> La facture sera créée avec :
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Données client :</strong> Récupérées depuis la mission (priorité) ou le devis</li>
+                                <li><strong>Informations tarifaires :</strong> Copiées depuis le devis associé</li>
+                                <li><strong>Détails de la mission :</strong> Récupérés depuis la mission</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-file-invoice-dollar me-2"></i>
+                                Créer la Facture
+                            </button>
+                            <a href="{{ url_for('creer_facture_depuis_prestation') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    
+        <div class="finance-form-actions">
+            <a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+        </div>
+
+    </form>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        Actions Rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('devis_pdf', devis_id=devis.id) }}" 
+                           class="btn btn-outline-primary" target="_blank">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Voir le Devis PDF
+                        </a>
+                        <a href="{{ url_for('detail_prestation', prestation_id=prestation.id) }}" 
+                           class="btn btn-outline-info">
+                            <i class="fas fa-eye me-2"></i>
+                            Voir la Mission
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

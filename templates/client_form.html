@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Nouveau client' if not client else 'Modifier client' }} - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-detail-header">
+        <div>
+            <p class="finance-eyebrow">Clients</p>
+            <h1 class="finance-detail-title">{{ 'Nouveau client' if not client else 'Modifier client' }}</h1>
+            <p class="finance-subtitle">Gérez les informations et contacts du client.</p>
+        </div>
+        <div class="finance-detail-actions">
+            <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+    </div>
+
+    <form method="POST" class="finance-grid">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Informations client</h5></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Nom *</label>
+                    <input type="text" class="form-control" name="nom" value="{{ client.nom if client else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Catégories</label>
+                    <input type="text" class="form-control" name="categories" value="{{ client.categories if client else '' }}" placeholder="Ex: VIP, Corporate">
+                </div>
+                <div>
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" name="notes" rows="4">{{ client.notes if client else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Contacts</h5></div>
+            <div class="card-body">
+                {% set contacts = client.contacts if client else [] %}
+                <div id="contacts-wrapper" class="space-y-3">
+                    {% for contact in contacts %}
+                    <div class="contact-row">
+                        <input type="text" class="form-control" name="contact_nom" placeholder="Nom" value="{{ contact.nom or '' }}">
+                        <input type="email" class="form-control" name="contact_email" placeholder="Email" value="{{ contact.email or '' }}">
+                        <input type="text" class="form-control" name="contact_telephone" placeholder="Téléphone" value="{{ contact.telephone or '' }}">
+                        <input type="text" class="form-control" name="contact_role" placeholder="Rôle" value="{{ contact.role or '' }}">
+                    </div>
+                    {% endfor %}
+                    <div class="contact-row">
+                        <input type="text" class="form-control" name="contact_nom" placeholder="Nom">
+                        <input type="email" class="form-control" name="contact_email" placeholder="Email">
+                        <input type="text" class="form-control" name="contact_telephone" placeholder="Téléphone">
+                        <input type="text" class="form-control" name="contact_role" placeholder="Rôle">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary mt-3" id="add-contact">Ajouter un contact</button>
+            </div>
+        </div>
+
+        <div class="finance-form-actions">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('add-contact')?.addEventListener('click', () => {
+        const wrapper = document.getElementById('contacts-wrapper');
+        if (!wrapper) return;
+        const row = document.createElement('div');
+        row.className = 'contact-row';
+        row.innerHTML = `
+            <input type="text" class="form-control" name="contact_nom" placeholder="Nom">
+            <input type="email" class="form-control" name="contact_email" placeholder="Email">
+            <input type="text" class="form-control" name="contact_telephone" placeholder="Téléphone">
+            <input type="text" class="form-control" name="contact_role" placeholder="Rôle">
+        `;
+        wrapper.appendChild(row);
+    });
+</script>
+{% endblock %}

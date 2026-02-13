@@ -1,0 +1,97 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact" %}
+{% block title %}Scanner Équipement{% endblock %}
+
+{% block extra_head %}
+<style>
+    #video {
+        width: 100%;
+        max-width: 720px;
+        border: 1px solid var(--nav-border);
+        border-radius: 16px;
+        background: #0b0f16;
+        box-shadow: var(--shadow-sm);
+    }
+    .scanner-controls {
+        display: grid;
+        gap: 12px;
+        margin-top: 16px;
+    }
+    .scanner-row {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .scanner-status {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--text-gray);
+    }
+    .scanner-detections {
+        margin-top: 18px;
+    }
+    .scanner-detections ul {
+        list-style: none;
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+    }
+    .scanner-detections li {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid var(--nav-border);
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h1 class="page-title" style="font-size:24px;"><i class="fa-solid fa-qrcode"></i> Scanner Équipement</h1>
+        <p>Autorisez l'accès à la caméra et aux notifications. Le scanner détecte automatiquement les codes-barres et envoie les données à l'API.</p>
+
+        <video id="video" playsinline autoplay></video>
+        <canvas id="canvas" style="display:none"></canvas>
+
+        <div class="scanner-controls">
+            <div class="scanner-row">
+                <div class="form-group">
+                    <label class="form-label" for="api_key">Clé API (X-API-KEY)</label>
+                    <input id="api_key" type="text" class="form-control" placeholder="Entrez la clé API" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="local_id">Site ID</label>
+                    <input id="local_id" type="number" class="form-control" placeholder="Ex: 1" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="nom">Nom (optionnel)</label>
+                    <input id="nom" type="text" class="form-control" placeholder="Nom équipement (optionnel)" />
+                </div>
+            </div>
+
+            <div class="public-actions" style="justify-content:flex-start;">
+                <button id="start" class="btn btn-primary">Démarrer</button>
+                <button id="stop" class="btn btn-outline-secondary">Arrêter</button>
+            </div>
+        </div>
+
+        <p class="scanner-status">Astuce: la clé API et le local_id sont sauvegardés localement pour réutilisation.</p>
+
+        <div class="scanner-status">
+            <strong>Statut:</strong> <span id="status">Inactif</span>
+        </div>
+
+        <div class="scanner-detections">
+            <h3>Détections récentes</h3>
+            <ul id="hits"></ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/scanner_camera.js"></script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda {{ materiel.nom }} - Planify{% endblock %}
+{% block page_title %}Agenda {{ materiel.nom }}{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-6xl mx-auto">
+        <!-- En-tête du matériel -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="card-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ materiel.nom }}
+                        </h3>
+                        <p class="text-gray-600">{{ materiel.categorie }} - {{ materiel.local.nom if materiel.local else 'Aucun local' }}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="status-badge status-{{ materiel.statut }}">
+                            {{ materiel.statut.title() }}
+                        </span>
+                        <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Retour à l'équipement
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendrier des prestations -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-calendar-check"></i>
+                    Missions programmées
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if prestations_par_date %}
+                    <div class="space-y-6">
+                        {% for date_key, prestations in prestations_par_date.items() %}
+                            <div class="border rounded-lg p-4">
+                                <h4 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-calendar-day"></i>
+                                    {{ prestations[0].date_debut.strftime('%A %d %B %Y') }}
+                                </h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {% for prestation in prestations %}
+                                        <div class="bg-gray-50 rounded-lg p-4 border-l-4 
+                                                    {% if prestation.statut == 'planifiee' %}border-blue-500{% endif %}
+                                                    {% if prestation.statut == 'confirmee' %}border-green-500{% endif %}
+                                                    {% if prestation.statut == 'terminee' %}border-gray-500{% endif %}
+                                                    {% if prestation.statut == 'annulee' %}border-red-500{% endif %}">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <h5 class="font-medium text-gray-900">{{ prestation.client }}</h5>
+                                                    <p class="text-sm text-gray-600">{{ prestation.lieu }}</p>
+                                                    <p class="text-sm text-gray-500">
+                                                        <i class="fas fa-clock"></i>
+                                                        {{ prestation.heure_debut.strftime('%H:%M') }} - {{ prestation.heure_fin.strftime('%H:%M') }}
+                                                    </p>
+                                                    <p class="text-sm text-gray-500">
+                                                        <i class="fas fa-user"></i>
+                                                        {{ prestation.dj.nom if prestation.dj else 'Aucun Prestataire' }}
+                                                    </p>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <span class="status-badge status-{{ prestation.statut }}">
+                                                        {{ prestation.statut.title() }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if prestation.notes %}
+                                                <div class="mt-2 text-sm text-gray-600">
+                                                    <i class="fas fa-sticky-note"></i>
+                                                    {{ prestation.notes }}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            <div class="mt-3 flex space-x-2">
+                                                <a href="{{ url_for('detail_prestation', prestation_id=prestation.id) }}" 
+                                                   class="btn btn-sm btn-secondary">
+                                                    <i class="fas fa-eye"></i>
+                                                    Voir
+                                                </a>
+                                                {% if current_user.can_edit_prestations() %}
+                                                    <a href="{{ url_for('modifier_prestation', prestation_id=prestation.id) }}" 
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                        Modifier
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-calendar-times text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500 mb-2">Aucune mission programmée</h3>
+                        <p class="text-gray-400">Cet équipement n'a pas encore été utilisé dans des missions.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Statistiques du matériel -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="text-3xl font-bold text-blue-600 mb-2">
+                        {{ prestations_par_date|length }}
+                    </div>
+                    <div class="text-gray-600">Jours avec missions</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="text-3xl font-bold text-green-600 mb-2">
+                        {% set total_prestations = prestations_par_date.values()|map('length')|sum %}
+                        {{ total_prestations }}
+                    </div>
+                    <div class="text-gray-600">Missions totales</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="text-3xl font-bold text-orange-600 mb-2">
+                        {% set prestations_confirmees = prestations_par_date.values()|map('length')|sum %}
+                        {{ prestations_confirmees }}
+                    </div>
+                    <div class="text-gray-600">Missions confirmées</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+

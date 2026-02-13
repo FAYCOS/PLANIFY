@@ -1,0 +1,671 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Temps Réel - Planify{% endblock %}
+
+{% block page_title %}Dashboard Temps Réel{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Métriques en temps réel -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="metric-content">
+                <h3 id="prestations-today">{{ prestations_aujourd_hui }}</h3>
+                <p>Missions aujourd'hui</p>
+                <div class="metric-trend" id="trend-prestations">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+12%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-euro-sign"></i>
+            </div>
+            <div class="metric-content">
+                <h3 id="revenus-today">{{ revenus_aujourd_hui }}€</h3>
+                <p>Revenus aujourd'hui</p>
+                <div class="metric-trend" id="trend-revenus">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+8%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <div class="metric-content">
+                <h3 id="materiel-dispo">{{ materiel_disponible }}</h3>
+                <p>Équipement disponible</p>
+                <div class="metric-trend" id="trend-materiel">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-3%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="metric-content">
+                <h3 id="djs-actifs">{{ djs_actifs }}</h3>
+                <p>Prestataires actifs</p>
+                <div class="metric-trend" id="trend-djs">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+5%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="charts-grid">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Missions par mois</h3>
+                <div class="chart-controls">
+                    <button class="btn-chart active" data-period="6m">6 mois</button>
+                    <button class="btn-chart" data-period="1y">1 an</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="prestationsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Revenus par mois</h3>
+                <div class="chart-controls">
+                    <button class="btn-chart active" data-period="6m">6 mois</button>
+                    <button class="btn-chart" data-period="1y">1 an</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="revenusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Répartition des missions</h3>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="repartitionChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Performance des Prestataires</h3>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activité récente -->
+    <div class="activity-section">
+        <div class="activity-header">
+            <h3>Activité récente</h3>
+            <button class="btn-refresh" onclick="refreshActivity()">
+                <i class="fas fa-sync-alt"></i>
+                Actualiser
+            </button>
+        </div>
+        <div class="activity-list" id="activityList">
+            <!-- Activité chargée via JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Scripts pour les graphiques -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Configuration des graphiques
+let prestationsChart, revenusChart, repartitionChart, performanceChart;
+
+// Données des graphiques (passées par le serveur)
+const chartData = {
+    prestations: {
+        labels: {{ chart_data.prestations.labels | tojson }},
+        data: {{ chart_data.prestations.data | tojson }}
+    },
+    revenus: {
+        labels: {{ chart_data.revenus.labels | tojson }},
+        data: {{ chart_data.revenus.data | tojson }}
+    },
+    repartition: {
+        labels: {{ chart_data.repartition.labels | tojson }},
+        data: {{ chart_data.repartition.data | tojson }}
+    },
+    performance: {
+        labels: {{ chart_data.performance.labels | tojson }},
+        data: {{ chart_data.performance.data | tojson }}
+    }
+};
+
+// Initialisation des graphiques
+document.addEventListener('DOMContentLoaded', function() {
+    initCharts();
+    loadActivity();
+    startRealTimeUpdates();
+});
+
+function initCharts() {
+    // Graphique des prestations
+    const prestationsCtx = document.getElementById('prestationsChart').getContext('2d');
+    prestationsChart = new Chart(prestationsCtx, {
+        type: 'line',
+        data: {
+            labels: chartData.prestations.labels,
+            datasets: [{
+                label: 'Missions',
+                data: chartData.prestations.data,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 2,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Graphique des revenus
+    const revenusCtx = document.getElementById('revenusChart').getContext('2d');
+    revenusChart = new Chart(revenusCtx, {
+        type: 'bar',
+        data: {
+            labels: chartData.revenus.labels,
+            datasets: [{
+                label: 'Revenus (€)',
+                data: chartData.revenus.data,
+                backgroundColor: '#10b981',
+                borderColor: '#059669',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 2,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Graphique de répartition
+    const repartitionCtx = document.getElementById('repartitionChart').getContext('2d');
+    repartitionChart = new Chart(repartitionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: chartData.repartition.labels,
+            datasets: [{
+                data: chartData.repartition.data,
+                backgroundColor: [
+                    '#667eea',
+                    '#f093fb',
+                    '#4facfe',
+                    '#43e97b'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 1,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Graphique de performance
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(performanceCtx, {
+        type: 'radar',
+        data: {
+            labels: chartData.performance.labels,
+            datasets: [{
+                label: 'Performance',
+                data: chartData.performance.data,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                pointBackgroundColor: '#f59e0b'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 1,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+function loadActivity() {
+    const activityList = document.getElementById('activityList');
+    
+    // Utiliser les données passées par le serveur
+    const activities = {{ recent_activities | tojson }};
+    
+    if (activities.length === 0) {
+        activityList.innerHTML = `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="activity-content">
+                    <p>Aucune activité récente</p>
+                    <span class="activity-time">Commencez à utiliser l'application</span>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    activityList.innerHTML = activities.map(activity => {
+        // Calculer le temps relatif
+        const now = new Date();
+        const activityTime = new Date(activity.time);
+        const diffMs = now - activityTime;
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        let timeText;
+        if (diffMinutes < 60) {
+            timeText = `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+        } else if (diffHours < 24) {
+            timeText = `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+        } else {
+            timeText = `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        }
+        
+        return `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="${activity.icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <p>${activity.message}</p>
+                    <span class="activity-time">${timeText}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function refreshActivity() {
+    // Animation de rafraîchissement
+    const btn = document.querySelector('.btn-refresh');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualisation...';
+    btn.disabled = true;
+    
+    // Recharger la page pour avoir les données les plus récentes
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function startRealTimeUpdates() {
+    // Mise à jour des métriques toutes les 30 secondes
+    setInterval(() => {
+        updateMetrics();
+    }, 30000);
+}
+
+function updateMetrics() {
+    // Simulation de mises à jour en temps réel
+    const prestations = document.getElementById('prestations-today');
+    const revenus = document.getElementById('revenus-today');
+    
+    // Animation de mise à jour
+    prestations.style.transform = 'scale(1.1)';
+    revenus.style.transform = 'scale(1.1)';
+    
+    setTimeout(() => {
+        prestations.style.transform = 'scale(1)';
+        revenus.style.transform = 'scale(1)';
+    }, 200);
+}
+
+// Gestion des contrôles de graphiques
+document.querySelectorAll('.btn-chart').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Retirer la classe active de tous les boutons
+        document.querySelectorAll('.btn-chart').forEach(b => b.classList.remove('active'));
+        // Ajouter la classe active au bouton cliqué
+        this.classList.add('active');
+        
+        // Ici on pourrait charger de nouvelles données selon la période
+        console.log('Période sélectionnée:', this.dataset.period);
+    });
+});
+</script>
+
+<style>
+.dashboard-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.chart-wrapper {
+    height: 300px;
+    position: relative;
+}
+
+.chart-wrapper canvas {
+    max-height: 300px !important;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #667eea;
+    transition: transform 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+}
+
+.metric-card .metric-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #0071e3, #005bb5);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.metric-card .metric-icon i {
+    color: white;
+    font-size: 20px;
+}
+
+.metric-content h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+}
+
+.metric-content p {
+    color: #6b7280;
+    margin: 0 0 12px 0;
+    font-size: 14px;
+}
+
+.metric-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.metric-trend i {
+    font-size: 10px;
+}
+
+.metric-trend.positive {
+    color: #10b981;
+}
+
+.metric-trend.negative {
+    color: #ef4444;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.chart-wrapper canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.chart-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 18px;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-chart {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-chart.active {
+    background: #0071e3;
+    color: white;
+    border-color: #667eea;
+}
+
+.btn-chart:hover {
+    background: #f3f4f6;
+}
+
+.btn-chart.active:hover {
+    background: #5a67d8;
+}
+
+.activity-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.activity-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 18px;
+}
+
+.btn-refresh {
+    padding: 8px 16px;
+    background: #0071e3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+.btn-refresh:hover {
+    background: #5a67d8;
+}
+
+.activity-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.activity-icon i {
+    color: #667eea;
+    font-size: 16px;
+}
+
+.activity-content p {
+    margin: 0 0 4px 0;
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.activity-time {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-wrapper {
+        height: 250px;
+    }
+}
+
+/* Contraintes supplémentaires pour les graphiques */
+.chart-wrapper {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.chart-wrapper canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+}
+
+/* Assurer que les conteneurs de graphiques ne débordent pas */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100%;
+}
+</style>
+{% endblock %}

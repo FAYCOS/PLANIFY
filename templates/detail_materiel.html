@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Fiche équipement - {{ materiel.nom }}{% endblock %}
+{% block page_title %}Fiche équipement{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-4xl mx-auto">
+        <div class="card mb-6">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <h3 class="card-title">
+                        <i class="fas fa-box"></i>
+                        {{ materiel.nom }}
+                    </h3>
+                    <span class="status-badge status-{{ materiel.statut }}">
+                        {{ materiel.statut|replace('_', ' ')|title }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="text-sm text-gray-600">Numéro de série</div>
+                        <div class="font-medium">{{ materiel.numero_serie or 'Non renseigné' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Catégorie</div>
+                        <div class="font-medium">{{ materiel.categorie or 'Non défini' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Site</div>
+                        <div class="font-medium">{{ materiel.local.nom }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Quantité</div>
+                        <div class="font-medium">{{ materiel.quantite }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Dernière maintenance</div>
+                        <div class="font-medium">
+                            {% if materiel.derniere_maintenance %}
+                                {{ materiel.derniere_maintenance.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                Non renseignée
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Dernier mouvement</div>
+                        <div class="font-medium">
+                            {% if dernier_mouvement %}
+                                {{ dernier_mouvement.type_mouvement|title }} - {{ dernier_mouvement.date_mouvement.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                Aucun
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if materiel.notes_technicien %}
+                <div class="mt-6">
+                    <div class="text-sm text-gray-600">Notes techniques</div>
+                    <div class="p-3 rounded-lg" style="background: #f5f5f7; color: #1d1d1f;">
+                        {{ materiel.notes_technicien }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="flex flex-wrap gap-3 mt-6">
+                    <a href="{{ url_for('modifier_materiel', materiel_id=materiel.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i>
+                        Modifier
+                    </a>
+                    <a href="{{ url_for('materiel_calendrier', materiel_id=materiel.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-calendar-alt"></i>
+                        Agenda
+                    </a>
+                    <a href="{{ url_for('selection_scan_materiel', materiel_id=materiel.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-qrcode"></i>
+                        Scanner
+                    </a>
+                    <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

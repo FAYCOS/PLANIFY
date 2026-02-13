@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau Prestataire - Planify{% endblock %}
+{% block page_title %}Nouveau Prestataire{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-2xl mx-auto">
+        <form method="POST" class="space-y-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-plus"></i>
+                        Informations du Prestataire
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label" for="nom">Nom *</label>
+                            <input type="text" id="nom" name="nom" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="contact">Contact</label>
+                            <input type="text" id="contact" name="contact" class="form-control" 
+                                   placeholder="Email ou téléphone">
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label" for="notes">Notes</label>
+                            <textarea id="notes" name="notes" class="form-control" rows="4" 
+                                      placeholder="Informations supplémentaires sur ce Prestataire..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('djs') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Créer le Prestataire
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

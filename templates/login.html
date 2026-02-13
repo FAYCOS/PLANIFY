@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - Planify{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <!-- Étape 1 : Nom d'utilisateur -->
+        <div id="step1" class="login-step">
+            <div class="login-header">
+                <div class="logo">
+                    {% if parametres and parametres.logo_path and parametres.afficher_logo_login %}
+                    <img src="{{ url_for('static', filename='uploads/' + parametres.logo_path) }}" 
+                         alt="{{ parametres.nom_entreprise }}" 
+                         style="height: 40px; width: 40px; object-fit: contain;">
+                    {% else %}
+                    <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="24" fill="url(#gradient)"/>
+                        <path d="M24 12L28 20L36 22L30 28L32 36L24 32L16 36L18 28L12 22L20 20L24 12Z" fill="white"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0" y1="0" x2="48" y2="48">
+                                <stop offset="0%" stop-color="#0071E3"/>
+                                <stop offset="100%" stop-color="#0077ED"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    {% endif %}
+                </div>
+                <h1>{{ parametres.nom_entreprise if parametres else 'Planify' }}</h1>
+                <p>{{ parametres.slogan if parametres and parametres.slogan else 'Connectez-vous pour continuer' }}</p>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message|apply_terminology }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="form-group">
+                <label for="username_input">Nom d'utilisateur</label>
+                <input type="text" id="username_input" 
+                       placeholder="Entrez votre nom d'utilisateur"
+                       autocomplete="username"
+                       autofocus>
+            </div>
+            
+            <button type="button" id="continue_btn" class="btn btn-primary btn-full">
+                Continuer
+                <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+            
+            <a class="btn btn-secondary btn-full mt-3" href="{{ url_for('zone_clients') }}">
+                <i class="fas fa-globe"></i>
+                Zone clients
+            </a>
+        </div>
+        
+        <!-- Étape 2 : Mot de passe avec photo -->
+        <div id="step2" class="login-step" style="display: none;">
+            <div class="login-header">
+                <div class="profile-photo-container">
+                    <img id="user_photo" src="" alt="Photo de profil" class="profile-photo">
+                    <div class="profile-photo-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <h2 id="welcome_message">Ravi de vous revoir</h2>
+                <p id="user_display_name"></p>
+            </div>
+            
+            <form method="POST" class="login-form">
+                <input type="hidden" id="username_hidden" name="username">
+                
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Entrez votre mot de passe"
+                           autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Se connecter
+                </button>
+                
+                <button type="button" id="back_btn" class="btn btn-secondary btn-full mt-3">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour
+                </button>
+            </form>
+        </div>
+    </div>
+    
+</div>
+
+<style>
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FBFBFD 0%, #F5F5F7 100%);
+    padding: 40px 20px;
+}
+
+.login-card {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    padding: 48px;
+    width: 100%;
+    max-width: 440px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.login-step {
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.logo {
+    margin: 0 auto 20px;
+    width: 48px;
+    height: 48px;
+}
+
+.login-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+}
+
+.login-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.login-header p {
+    font-size: 15px;
+    color: var(--text-gray);
+}
+
+.profile-photo-container {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 20px;
+}
+
+.profile-photo {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--blue);
+    display: none;
+}
+
+.profile-photo.show {
+    display: block;
+}
+
+.profile-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-hover) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: white;
+}
+
+.profile-photo-placeholder.hide {
+    display: none;
+}
+
+.btn {
+    position: relative;
+}
+
+.btn .ml-2 {
+    margin-left: 8px;
+}
+
+.mt-3 {
+    margin-top: 12px;
+}
+
+.test-accounts-info {
+    margin-top: 32px;
+    text-align: center;
+}
+
+
+input.error {
+    border-color: var(--red) !important;
+    animation: shake 0.4s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 32px 24px;
+    }
+    
+    .login-header h1 {
+        font-size: 28px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+    function getPublicApiToken() {
+        const meta = document.querySelector('meta[name="public-api-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const usernameInput = document.getElementById('username_input');
+    const continueBtn = document.getElementById('continue_btn');
+    const backBtn = document.getElementById('back_btn');
+    const usernameHidden = document.getElementById('username_hidden');
+    const passwordInput = document.getElementById('password');
+    const userPhoto = document.getElementById('user_photo');
+    const photoPlaceholder = document.querySelector('.profile-photo-placeholder');
+    const welcomeMessage = document.getElementById('welcome_message');
+    const userDisplayName = document.getElementById('user_display_name');
+    
+    // Gestion de l'entrée avec Enter
+    usernameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            continueBtn.click();
+        }
+    });
+    
+    // Bouton Continuer
+    continueBtn.addEventListener('click', async function() {
+        const username = usernameInput.value.trim();
+        
+        if (!username) {
+            usernameInput.focus();
+            return;
+        }
+        
+        // Désactiver le bouton pendant la vérification
+        continueBtn.disabled = true;
+        continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
+        
+        try {
+            // Vérifier si l'utilisateur existe
+            const csrfToken = getCsrfToken();
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (csrfToken) {
+                headers['X-CSRF-Token'] = csrfToken;
+            }
+            const publicToken = getPublicApiToken();
+            if (publicToken) {
+                headers['X-Public-Token'] = publicToken;
+            }
+            const response = await fetch('/api/check-username', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ username: username })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Erreur serveur');
+            }
+            
+            const data = await response.json();
+            
+            if (data.exists) {
+                // Passer à l'étape 2
+                usernameHidden.value = username;
+                
+                // Afficher la photo si elle existe (désactivé pour limiter l'énumération)
+                userPhoto.classList.remove('show');
+                photoPlaceholder.classList.remove('hide');
+
+                // Afficher un message générique
+                const displayName = data.prenom || data.nom ? `${data.prenom || ''} ${data.nom || ''}`.trim() : username;
+                welcomeMessage.textContent = `Ravi de vous revoir !`;
+                userDisplayName.textContent = displayName;
+                
+                // Animation de transition
+                step1.style.opacity = '0';
+                step1.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    step1.style.display = 'none';
+                    step2.style.display = 'block';
+                    step2.style.opacity = '0';
+                    step2.style.transform = 'translateX(20px)';
+                    
+                    setTimeout(() => {
+                        step2.style.opacity = '1';
+                        step2.style.transform = 'translateX(0)';
+                        passwordInput.focus();
+                    }, 50);
+                }, 300);
+                
+            } else {
+                // Utilisateur non trouvé
+                usernameInput.classList.add('error');
+                usernameInput.value = '';
+                usernameInput.placeholder = 'Utilisateur non trouvé';
+                usernameInput.focus();
+                
+                setTimeout(() => {
+                    usernameInput.classList.remove('error');
+                    usernameInput.placeholder = 'Entrez votre nom d\'utilisateur';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            // Afficher un message d'erreur plus user-friendly
+            usernameInput.classList.add('error');
+            usernameInput.value = '';
+            usernameInput.placeholder = 'Erreur de connexion. Réessayez.';
+            
+            setTimeout(() => {
+                usernameInput.classList.remove('error');
+                usernameInput.placeholder = 'Entrez votre nom d\'utilisateur';
+            }, 3000);
+        } finally {
+            continueBtn.disabled = false;
+            continueBtn.innerHTML = 'Continuer <i class="fas fa-arrow-right ml-2"></i>';
+        }
+    });
+    
+    // Bouton Retour
+    backBtn.addEventListener('click', function() {
+        step2.style.opacity = '0';
+        step2.style.transform = 'translateX(20px)';
+        
+        setTimeout(() => {
+            step2.style.display = 'none';
+            step1.style.display = 'block';
+            step1.style.opacity = '0';
+            step1.style.transform = 'translateX(-20px)';
+            
+            setTimeout(() => {
+                step1.style.opacity = '1';
+                step1.style.transform = 'translateX(0)';
+                passwordInput.value = '';
+                usernameInput.focus();
+            }, 50);
+        }, 300);
+    });
+    
+    // Style pour les transitions
+    step1.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    step2.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+});
+</script>
+{% endblock %}

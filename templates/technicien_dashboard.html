@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord Prestataire technique - Planify{% endblock %}
+
+{% block page_title %}Tableau de bord Prestataire technique{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Message de bienvenue -->
+    <div class="welcome-card">
+        <div class="welcome-content">
+            <h1><i class="fas fa-tools"></i> Bienvenue, {{ current_user.prenom }} {{ current_user.nom }}</h1>
+            <p>Interface de gestion de l'équipement et maintenance</p>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.total_materiels }}</h3>
+                <p>Total équipements</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.materiels_disponibles }}</h3>
+                <p>Disponibles</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.materiels_maintenance }}</h3>
+                <p>En maintenance</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-wrench"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.materiels_maintenance }}</h3>
+                <p>Maintenance</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-bolt"></i> Actions Rapides</h2>
+        </div>
+        <div class="card-body">
+            <div class="action-grid">
+                <a href="{{ url_for('materiels') }}" class="action-btn">
+                    <i class="fas fa-list"></i>
+                    <span>Gérer Équipement</span>
+                </a>
+                
+                <a href="{{ url_for('nouveau_materiel') }}" class="action-btn">
+                    <i class="fas fa-plus"></i>
+                    <span>Nouveau Équipement</span>
+                </a>
+                
+                <a href="{{ url_for('prestations') }}" class="action-btn">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Missions</span>
+                </a>
+                
+                <a href="{{ url_for('locals') }}" class="action-btn">
+                    <i class="fas fa-building"></i>
+                    <span>Sites</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matériel en maintenance -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-wrench"></i> Équipement en Maintenance</h2>
+        </div>
+        <div class="card-body">
+            {% if materiels_maintenance %}
+                <div class="materiels-list">
+                    {% for materiel in materiels_maintenance %}
+                    <div class="materiel-item">
+                        <div class="materiel-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="materiel-details">
+                            <h3>{{ materiel.nom }}</h3>
+                            <p><i class="fas fa-tag"></i> {{ materiel.categorie }}</p>
+                            <p><i class="fas fa-building"></i> {{ materiel.local.nom if materiel.local else 'Non assigné' }}</p>
+                            <p><i class="fas fa-box"></i> Quantité: {{ materiel.quantite }}</p>
+                        </div>
+                        <div class="materiel-actions">
+                            <a href="{{ url_for('changer_statut_materiel', materiel_id=materiel.id) }}" 
+                               class="btn btn-sm btn-success">
+                                <i class="fas fa-check"></i> Réparer
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Aucun équipement en maintenance</h3>
+                    <p>Tout l'équipement est opérationnel</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistiques détaillées -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-pie"></i> État du Équipement</h2>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item">
+                        <span class="stat-label">Disponibles</span>
+                        <span class="stat-value">{{ stats.materiels_disponibles }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Maintenance</span>
+                        <span class="stat-value">{{ stats.materiels_maintenance }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Maintenance</span>
+                        <span class="stat-value">{{ stats.materiels_maintenance }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-info-circle"></i> Informations</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Vérifiez régulièrement l'état de l'équipement</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Planifiez les maintenances préventives</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Signalez tout problème immédiatement</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.welcome-card {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+}
+
+.welcome-content h1 {
+    margin: 0 0 10px 0;
+    font-size: 2rem;
+}
+
+.welcome-content p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    background: #ff6b6b;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 2rem;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-weight: 500;
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.action-btn:hover {
+    background: #ff6b6b;
+    color: white;
+    transform: translateY(-3px);
+    border-color: #ff6b6b;
+}
+
+.action-btn i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.action-btn span {
+    font-weight: 600;
+}
+
+.materiels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.materiel-item {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    background: #fff3cd;
+    border-radius: 10px;
+    border-left: 4px solid #ff6b6b;
+    transition: transform 0.3s;
+}
+
+.materiel-item:hover {
+    transform: translateX(5px);
+}
+
+.materiel-icon {
+    width: 50px;
+    height: 50px;
+    background: #ff6b6b;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    margin-right: 20px;
+}
+
+.materiel-details {
+    flex: 1;
+}
+
+.materiel-details h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.materiel-details p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.materiel-details i {
+    margin-right: 8px;
+    color: #ff6b6b;
+}
+
+.materiel-actions {
+    margin-left: 20px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-weight: 500;
+    color: #666;
+}
+
+.stat-value {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item i {
+    margin-right: 15px;
+    color: #ff6b6b;
+    font-size: 1.2rem;
+}
+
+.info-item span {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #ddd;
+}
+
+.empty-state h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.empty-state p {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .materiel-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .materiel-icon {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+    
+    .materiel-actions {
+        margin-left: 0;
+        margin-top: 15px;
+    }
+
+}
+</style>
+{% endblock %}
+
+
+
+
+
+

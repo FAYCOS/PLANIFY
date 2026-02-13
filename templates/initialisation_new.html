@@ -1,0 +1,217 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact init-shell" %}
+{% block title %}Initialisation - Planify{% endblock %}
+
+{% block content %}
+<div class="init-container">
+    <div class="init-card">
+        <div class="logo">
+            <i class="fas fa-star"></i>
+        </div>
+
+        <h1>Configuration initiale</h1>
+        <p class="subtitle">Créez votre compte administrateur pour commencer</p>
+
+        <div class="steps">
+            <div class="step" id="step1"></div>
+            <div class="step" id="step2"></div>
+            <div class="step" id="step3"></div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        <span>{{ message|apply_terminology }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div id="step1-form">
+            <form method="POST" action="{{ url_for('initialisation') }}">
+                <div class="form-group">
+                    <label class="form-label" for="nom">Nom</label>
+                    <input type="text" id="nom" name="nom" class="form-control" required placeholder="Dupont">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="prenom">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" class="form-control" required placeholder="Jean">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required placeholder="jean@exemple.fr">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="telephone">Téléphone</label>
+                    <input type="tel" id="telephone" name="telephone" class="form-control" required placeholder="06 12 34 56 78">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Continuer</button>
+            </form>
+        </div>
+
+        <div id="step2-form" class="verification-section">
+            <div class="alert alert-info">
+                <i class="fas fa-envelope"></i>
+                <span>Code envoyé à <strong id="email-display"></strong></span>
+            </div>
+
+            <form method="POST" action="{{ url_for('verifier_code') }}">
+                <div class="form-group">
+                    <label class="form-label">Code de vérification</label>
+                    <div class="code-input">
+                        <input type="text" class="code-digit" maxlength="1" name="code1" required>
+                        <input type="text" class="code-digit" maxlength="1" name="code2" required>
+                        <input type="text" class="code-digit" maxlength="1" name="code3" required>
+                        <input type="text" class="code-digit" maxlength="1" name="code4" required>
+                        <input type="text" class="code-digit" maxlength="1" name="code5" required>
+                        <input type="text" class="code-digit" maxlength="1" name="code6" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Vérifier</button>
+
+                <div class="helper-text">
+                    Vous n'avez pas reçu le code ?
+                    <button type="button" onclick="renvoyerCode()">Renvoyer</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="step3-form" class="verification-section">
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                <span>Email vérifié avec succès !</span>
+            </div>
+
+            <form method="POST" action="{{ url_for('finaliser_initialisation') }}">
+                <div class="form-group">
+                    <label class="form-label" for="username">Nom d'utilisateur</label>
+                    <input type="text" id="username" name="username" class="form-control" required placeholder="admin">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" class="form-control" required placeholder="Minimum 6 caractères" minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">Confirmer le mot de passe</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" required placeholder="Même mot de passe">
+                </div>
+
+                <hr>
+
+                <div class="form-group">
+                    <label class="form-label" for="nom_entreprise">Nom de l'entreprise</label>
+                    <input type="text" id="nom_entreprise" name="nom_entreprise" class="form-control" required placeholder="Mon Entreprise">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="adresse">Adresse</label>
+                    <input type="text" id="adresse" name="adresse" class="form-control" placeholder="123 rue Example">
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label class="form-label" for="code_postal">Code postal</label>
+                        <input type="text" id="code_postal" name="code_postal" class="form-control" placeholder="75001">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ville">Ville</label>
+                        <input type="text" id="ville" name="ville" class="form-control" placeholder="Paris">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Finaliser</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showStep(stepNumber) {
+        document.getElementById('step1-form').style.display = 'none';
+        document.getElementById('step2-form').style.display = 'none';
+        document.getElementById('step3-form').style.display = 'none';
+
+        if (stepNumber === 1) {
+            document.getElementById('step1-form').style.display = 'block';
+        } else if (stepNumber === 2) {
+            document.getElementById('step2-form').style.display = 'block';
+            document.getElementById('step2-form').classList.add('active');
+        } else if (stepNumber === 3) {
+            document.getElementById('step3-form').style.display = 'block';
+            document.getElementById('step3-form').classList.add('active');
+        }
+
+        for (let i = 1; i <= 3; i++) {
+            const step = document.getElementById(`step${i}`);
+            if (i < stepNumber) {
+                step.classList.add('completed');
+                step.classList.remove('active');
+            } else if (i === stepNumber) {
+                step.classList.add('active');
+                step.classList.remove('completed');
+            } else {
+                step.classList.remove('active', 'completed');
+            }
+        }
+    }
+
+    const codeInputs = document.querySelectorAll('.code-digit');
+    codeInputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+            if (e.target.value.length === 1) {
+                if (index < codeInputs.length - 1) {
+                    codeInputs[index + 1].focus();
+                }
+            }
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && e.target.value === '') {
+                if (index > 0) {
+                    codeInputs[index - 1].focus();
+                }
+            }
+        });
+    });
+
+    function renvoyerCode() {
+        fetch('{{ url_for("renvoyer_code") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Code renvoyé !');
+            } else {
+                alert('Erreur: ' + (data.message || 'Erreur inconnue'));
+            }
+        })
+        .catch(() => {
+            alert('Erreur de connexion');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if email_sent %}
+            showStep(2);
+        {% elif email_verified %}
+            showStep(3);
+        {% else %}
+            showStep(1);
+        {% endif %}
+    });
+</script>
+{% endblock %}

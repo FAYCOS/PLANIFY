@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}{{ prestation.client }} - Planify{% endblock %}
+{% block page_title %}{{ prestation.client }}{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Actions -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-4">
+            {% if current_user and current_user.role in ['admin', 'manager'] %}
+            <a href="{{ url_for('modifier_prestation', prestation_id=prestation.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i>
+                Modifier
+            </a>
+            
+            {% if prestation.statut != 'annulee' %}
+            <form method="POST" action="{{ url_for('annuler_prestation', prestation_id=prestation.id) }}" 
+                  style="display: inline;" onsubmit="return confirm('⚠️ ANNULER CETTE MISSION ?\n\nCette action va :\n✓ Mettre le statut en \'Annulé\'\n✓ Supprimer tous les devis liés\n✓ Supprimer toutes les factures liées\n✓ Libérer tous les équipements\n✓ Supprimer l\'événement Google Calendar\n✓ Notifier le client, le prestataire et les managers\n\nConfirmer l\'annulation ?')">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-ban"></i>
+                    Annuler la mission
+                </button>
+            </form>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('supprimer_prestation', prestation_id=prestation.id) }}" 
+                  style="display: inline;" onsubmit="return confirm('⚠️ SUPPRIMER DÉFINITIVEMENT ?\n\nCette action supprimera complètement la prestation de la base de données.\nPréférez \'Annuler\' pour garder l\'historique.\n\nConfirmer la suppression ?')">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Supprimer
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('prestations') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Informations de la prestation -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    Informations
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Client</label>
+                        <p class="text-gray-900">{{ prestation.client }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Lieu</label>
+                        <p class="text-gray-900">{{ prestation.lieu }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Prestataire</label>
+                        <p class="text-gray-900">{{ prestation.dj.nom if prestation.dj else 'Non assigné' }}</p>
+                    </div>
+
+                    {% if prestation.technicien %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Prestataire technique</label>
+                        <p class="text-gray-900">{{ prestation.technicien.nom }} {{ prestation.technicien.prenom }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Date de début</label>
+                        <p class="text-gray-900">{{ prestation.date_debut.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Date de fin</label>
+                        <p class="text-gray-900">{{ prestation.date_fin.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Statut</label>
+                        <span class="status-badge status-{{ prestation.statut }}">
+                            {{ prestation.statut|title }}
+                        </span>
+                    </div>
+                    
+                    {% if prestation.notes %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Notes</label>
+                        <p class="text-gray-900">{{ prestation.notes }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if custom_fields_display %}
+                    <div class="pt-2 border-t border-gray-200">
+                        <label class="text-sm font-medium text-gray-600">Champs personnalisés</label>
+                        <div class="mt-2 space-y-2">
+                            {% for field in custom_fields_display %}
+                            <div class="flex items-start justify-between gap-4">
+                                <span class="text-sm text-gray-500">{{ field.label }}</span>
+                                <span class="text-sm text-gray-900 text-right">{{ field.value }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Matériel utilisé -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i>
+                    Équipement utilisé
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if prestation.materiel_assignations %}
+                <div class="space-y-3">
+                    {% for assignation in prestation.materiel_assignations %}
+                    {% set materiel = assignation.materiel %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium">{{ materiel.nom }}</div>
+                            <div class="text-sm text-gray-600">{{ materiel.categorie }} - {{ materiel.local.nom }}</div>
+                        </div>
+                        <span class="text-sm font-medium">x{{ assignation.quantite }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-gray-500">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                    <p>Aucun équipement assigné</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-bolt"></i>
+                    Actions rapides
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    <a href="{{ url_for('calendrier') }}" class="btn btn-secondary w-full">
+                        <i class="fas fa-calendar"></i>
+                        Voir le calendrier
+                    </a>
+                    {% if prestation.dj_id and current_user and current_user.role in ['admin', 'manager'] %}
+                    <a href="{{ url_for('detail_dj', dj_id=prestation.dj_id) }}" class="btn btn-secondary w-full">
+                        <i class="fas fa-user"></i>
+                        Voir le Prestataire
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Localisation -->
+        <div class="card lg:col-span-3">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-map-marked-alt"></i>
+                    Localisation
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">Adresse validée et distance depuis l'entreprise.</p>
+            </div>
+            <div class="card-body">
+                {% if prestation.lieu_lat and prestation.lieu_lng %}
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div id="prestation-map" style="height: 280px; border-radius: 12px;"></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-600">Adresse validée</label>
+                            <p class="text-gray-900">{{ prestation.lieu_formatted or prestation.lieu }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-600">Distance</label>
+                            <p class="text-gray-900">
+                                {% if prestation.distance_km is not none %}
+                                    {{ '%.2f'|format(prestation.distance_km) }} km
+                                    {% if prestation.distance_source %}({{ prestation.distance_source }}){% endif %}
+                                {% else %}
+                                    Non calculée
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if company_coords %}
+                        <div>
+                            <label class="text-sm font-medium text-gray-600">Itinéraire</label>
+                            <p id="route-status" class="text-gray-900">Non calculé</p>
+                            <p class="text-sm text-gray-600">
+                                Durée: <span id="route-duration">—</span> · Distance: <span id="route-distance">—</span>
+                            </p>
+                            <button type="button"
+                                    id="route-calc-btn"
+                                    class="btn btn-secondary w-full mt-2"
+                                    data-company-lat="{{ company_coords[0] }}"
+                                    data-company-lng="{{ company_coords[1] }}"
+                                    data-dest-lat="{{ prestation.lieu_lat }}"
+                                    data-dest-lng="{{ prestation.lieu_lng }}">
+                                <i class="fas fa-route"></i>
+                                Calculer l'itinéraire
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2">Le calcul ne se lance que sur demande.</p>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <label class="text-sm font-medium text-gray-600">Indemnité kilométrique</label>
+                            <p class="text-gray-900">
+                                {% if prestation.indemnite_km is not none %}
+                                    {{ '%.2f'|format(prestation.indemnite_km) }} €
+                                {% else %}
+                                    Non calculée
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if company_coords %}
+                        <a class="btn btn-secondary w-full" target="_blank"
+                           href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route={{ company_coords[0] }},{{ company_coords[1] }};{{ prestation.lieu_lat }},{{ prestation.lieu_lng }}">
+                            <i class="fas fa-route"></i>
+                            Ouvrir l'itinéraire
+                        </a>
+                        {% endif %}
+                        <a class="btn btn-secondary w-full" target="_blank"
+                           href="https://www.openstreetmap.org/?mlat={{ prestation.lieu_lat }}&mlon={{ prestation.lieu_lng }}#map=15/{{ prestation.lieu_lat }}/{{ prestation.lieu_lng }}">
+                            <i class="fas fa-map"></i>
+                            Voir sur la carte
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-gray-600">
+                    Adresse non géocodée. Modifiez la mission pour relancer la validation.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+{% if prestation.lieu_lat and prestation.lieu_lng and not maps_api_key %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if prestation.lieu_lat and prestation.lieu_lng %}
+    {% if maps_api_key %}
+    <script>
+        function initPrestationMap() {
+            const center = { lat: {{ prestation.lieu_lat }}, lng: {{ prestation.lieu_lng }} };
+            const map = new google.maps.Map(document.getElementById('prestation-map'), {
+                zoom: 13,
+                center: center,
+                mapTypeControl: false,
+                streetViewControl: false
+            });
+            new google.maps.Marker({ position: center, map: map });
+            window.prestationMap = map;
+            window.prestationMapType = 'google';
+        }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&callback=initPrestationMap"></script>
+    {% else %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        const prestationCoords = [{{ prestation.lieu_lat }}, {{ prestation.lieu_lng }}];
+        const map = L.map('prestation-map', { scrollWheelZoom: false }).setView(prestationCoords, 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const prestationMarker = L.marker(prestationCoords).addTo(map)
+            .bindPopup("Mission");
+
+        {% if company_coords %}
+        const companyCoords = [{{ company_coords[0] }}, {{ company_coords[1] }}];
+        const companyMarker = L.marker(companyCoords).addTo(map)
+            .bindPopup("Entreprise");
+
+        const bounds = L.latLngBounds([prestationCoords, companyCoords]);
+        map.fitBounds(bounds, { padding: [24, 24] });
+        {% endif %}
+
+        window.prestationMap = map;
+        window.prestationMapType = 'leaflet';
+    </script>
+    {% endif %}
+
+    <script>
+        function formatDuration(seconds) {
+            if (!Number.isFinite(seconds)) return '—';
+            const mins = Math.round(seconds / 60);
+            if (mins < 60) return `${mins} min`;
+            const hours = Math.floor(mins / 60);
+            const rem = mins % 60;
+            return `${hours}h${rem.toString().padStart(2, '0')}`;
+        }
+
+        function formatDistance(meters) {
+            if (!Number.isFinite(meters)) return '—';
+            const km = meters / 1000;
+            return `${km.toFixed(1)} km`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('route-calc-btn');
+            if (!btn) return;
+            const statusEl = document.getElementById('route-status');
+            const durationEl = document.getElementById('route-duration');
+            const distanceEl = document.getElementById('route-distance');
+            let routeLine = null;
+
+            btn.addEventListener('click', async () => {
+                const companyLat = parseFloat(btn.dataset.companyLat);
+                const companyLng = parseFloat(btn.dataset.companyLng);
+                const destLat = parseFloat(btn.dataset.destLat);
+                const destLng = parseFloat(btn.dataset.destLng);
+                if (![companyLat, companyLng, destLat, destLng].every(Number.isFinite)) {
+                    statusEl.textContent = 'Coordonnées manquantes';
+                    return;
+                }
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcul en cours...';
+                statusEl.textContent = 'Calcul en cours...';
+
+                try {
+                    const url = `https://router.project-osrm.org/route/v1/driving/${companyLng},${companyLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    if (!data.routes || !data.routes[0]) {
+                        throw new Error('Aucun itinéraire trouvé');
+                    }
+                    const route = data.routes[0];
+                    durationEl.textContent = formatDuration(route.duration);
+                    distanceEl.textContent = formatDistance(route.distance);
+                    statusEl.textContent = 'Itinéraire calculé';
+
+                    if (window.prestationMapType === 'leaflet' && window.prestationMap && window.L && route.geometry) {
+                        if (routeLine) {
+                            window.prestationMap.removeLayer(routeLine);
+                        }
+                        routeLine = L.geoJSON(route.geometry, {
+                            style: { color: '#111827', weight: 4, opacity: 0.85 }
+                        }).addTo(window.prestationMap);
+                        window.prestationMap.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
+                    }
+
+                    btn.innerHTML = '<i class="fas fa-check"></i> Itinéraire prêt';
+                } catch (err) {
+                    statusEl.textContent = "Impossible de calculer l'itinéraire";
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-route"></i> Calculer l\'itinéraire';
+                }
+            });
+        });
+    </script>
+{% endif %}
+{% endblock %}

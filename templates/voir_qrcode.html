@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}QR Code - {{materiel.nom}}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white text-center">
+            <h3><i class="fas fa-qrcode"></i> QR Code Équipement</h3>
+        </div>
+        <div class="card-body text-center">
+            <h4>{{materiel.nom}}</h4>
+            <p class="text-muted">{{materiel.categorie}} | Site: {{materiel.local.nom}}</p>
+            {% if materiel.numero_serie %}
+            <p class="text-muted"><small>SN: {{ materiel.numero_serie }}</small></p>
+            {% endif %}
+            
+            <div class="my-4">
+                <img src="{{ url_for('qrcode_materiel_image', materiel_id=materiel.id) }}" 
+                     alt="QR Code" 
+                     class="img-fluid" 
+                     style="max-width: 400px; border: 2px solid #ddd; padding: 20px; background: white;">
+            </div>
+            
+            <p class="text-muted"><small>ID: {{materiel.id}}</small></p>
+            
+            <div class="mt-4">
+                <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                <a href="{{ url_for('qrcode_materiel_image', materiel_id=materiel.id) }}" 
+                   download="qrcode_{{materiel.id}}_{{materiel.nom}}.png" 
+                   class="btn btn-success">
+                    <i class="fas fa-download"></i> Télécharger
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

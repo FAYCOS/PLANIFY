@@ -1,0 +1,902 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres - Planify{% endblock %}
+{% block page_title %}Paramètres de l'entreprise{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-6xl mx-auto">
+        <form method="POST" action="{{ url_for('modifier_parametres') }}" enctype="multipart/form-data"
+            class="space-y-6">
+
+            <!-- Entreprise -->
+            <div class="card" id="entreprise">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-building"></i>
+                        Entreprise
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Coordonnées, branding, adresse et informations légales.</p>
+                </div>
+                <div class="card-body space-y-8">
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Identité & contact
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="form-label" for="nom_entreprise">Nom de l'entreprise *</label>
+                                <input type="text" id="nom_entreprise" name="nom_entreprise" class="form-control"
+                                    value="{{ parametres.nom_entreprise }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="telephone">Téléphone</label>
+                                <input type="tel" id="telephone" name="telephone" class="form-control"
+                                    value="{{ parametres.telephone or '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="email">Email</label>
+                                <input type="email" id="email" name="email" class="form-control"
+                                    value="{{ parametres.email or '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="site_web">Site web</label>
+                                <input type="url" id="site_web" name="site_web" class="form-control"
+                                    value="{{ parametres.site_web or '' }}">
+                            </div>
+
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label" for="email_signature">Signature email</label>
+                                <textarea id="email_signature" name="email_signature" class="form-control" rows="3"
+                                    placeholder="Ex: L'équipe Planify&#10;Jean Dupont&#10;Responsable production">{{ parametres.email_signature or '' }}</textarea>
+                                <small class="text-muted">Affichée dans tous les emails sortants.</small>
+                            </div>
+
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label" for="google_maps_api_key">Clé API Google Maps</label>
+                                <input type="password" id="google_maps_api_key" name="google_maps_api_key"
+                                    class="form-control" placeholder="Laisser vide pour conserver la clé actuelle"
+                                    autocomplete="new-password">
+                                <small class="text-muted">
+                                    {% if parametres.google_maps_api_key %}
+                                    Clé configurée. La variable d'environnement GOOGLE_MAPS_API_KEY reste prioritaire.
+                                    {% else %}
+                                    Aucune clé enregistrée.
+                                    {% endif %}
+                                </small>
+                                <label class="flex items-center space-x-3 cursor-pointer mt-2">
+                                    <input type="checkbox" name="clear_google_maps_api_key" value="1"
+                                        class="form-checkbox h-5 w-5 text-red-600">
+                                    <span class="text-gray-700">Effacer la clé Google Maps enregistrée</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Branding</h4>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="form-group">
+                                <label class="form-label" for="logo">Logo de l'entreprise</label>
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-1">
+                                        <input type="file" id="logo" name="logo" accept="image/*" class="form-control">
+                                        <small class="text-muted">JPG, PNG, SVG. Max 2MB (logo désactivé pour
+                                            l'instant)</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="signature_entreprise">Signature manuscrite (entreprise)</label>
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-1">
+                                        <input type="file" id="signature_entreprise" name="signature_entreprise" accept="image/*" class="form-control">
+                                        <small class="text-muted">PNG recommandé (fond transparent). Utilisée sur les PDF si activée.</small>
+                                    </div>
+                                </div>
+                                {% if parametres.signature_entreprise_path %}
+                                <div class="mt-3 flex items-center gap-4">
+                                    <img src="{{ url_for('static', filename='uploads/' ~ parametres.signature_entreprise_path) }}"
+                                         alt="Signature entreprise" style="max-height: 80px;" class="border rounded-md p-2 bg-white">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" name="clear_signature_entreprise" value="1"
+                                            class="form-checkbox h-5 w-5 text-red-600">
+                                        <span class="text-gray-700">Supprimer la signature enregistrée</span>
+                                    </label>
+                                </div>
+                                {% endif %}
+                                <label class="flex items-center space-x-3 cursor-pointer mt-3">
+                                    <input type="checkbox" name="signature_entreprise_enabled" value="1"
+                                        class="form-checkbox h-5 w-5 text-blue-600" {{ 'checked' if parametres.signature_entreprise_enabled else '' }}>
+                                    <span class="text-gray-700">Inclure la signature de l'entreprise sur les PDF</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="slogan">Slogan / Tagline</label>
+                                <input type="text" id="slogan" name="slogan" class="form-control"
+                                    value="{{ parametres.slogan or '' }}"
+                                    placeholder="ex: La gestion de vos missions simplifiée">
+                                <small class="text-muted">Affiché sous votre logo sur l'écran de connexion</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="description_courte">Description de l'entreprise</label>
+                                <textarea id="description_courte" name="description_courte" class="form-control"
+                                    rows="3"
+                                    placeholder="Décrivez votre entreprise en quelques mots...">{{ parametres.description_courte or '' }}</textarea>
+                                <small class="text-muted">Utilisée sur les documents officiels et exports</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Options d'affichage du logo</label>
+                                <div class="space-y-3">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" name="afficher_logo_login" value="1"
+                                            class="form-checkbox h-5 w-5 text-blue-600" {{ 'checked' if
+                                            parametres.afficher_logo_login else '' }}>
+                                        <span class="text-gray-700">Afficher le logo sur l'écran de connexion</span>
+                                    </label>
+
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" name="afficher_logo_sidebar" value="1"
+                                            class="form-checkbox h-5 w-5 text-blue-600" {{ 'checked' if
+                                            parametres.afficher_logo_sidebar else '' }}>
+                                        <span class="text-gray-700">Afficher le logo dans la barre latérale</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="mt-4 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                                <h4 class="font-bold text-gray-800 mb-3 flex items-center">
+                                    <i class="fas fa-eye text-blue-600 mr-2"></i>
+                                    Aperçu du branding
+                                </h4>
+                                <div class="bg-white p-6 rounded-lg shadow-sm">
+                                    <div>
+                                        <h3 class="font-bold text-lg text-gray-900 mb-2">{{ parametres.nom_entreprise }}
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mb-3" id="preview-slogan">
+                                            {{ parametres.slogan or 'Votre slogan apparaîtra ici' }}
+                                        </p>
+                                    </div>
+
+                                    {% if parametres.description_courte %}
+                                    <p class="text-sm text-gray-700 border-t pt-3" id="preview-description">
+                                        {{ parametres.description_courte }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Adresse</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label" for="adresse">Adresse</label>
+                                <textarea id="adresse" name="adresse" class="form-control"
+                                    rows="3">{{ parametres.adresse or '' }}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="code_postal">Code postal</label>
+                                <input type="text" id="code_postal" name="code_postal" class="form-control"
+                                    value="{{ parametres.code_postal or '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="ville">Ville</label>
+                                <input type="text" id="ville" name="ville" class="form-control"
+                                    value="{{ parametres.ville or '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Déplacements</h4>
+                        <p class="text-sm text-gray-600 mb-4">Utilisé pour le calcul des indemnités kilométriques.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="form-label" for="distance_gratuite_km">Distance gratuite (km)</label>
+                                <input type="number" step="0.1" id="distance_gratuite_km" name="distance_gratuite_km"
+                                    class="form-control" value="{{ parametres.distance_gratuite_km or 30 }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="frais_deplacement_km">Indemnité kilométrique
+                                    (€/km)</label>
+                                <input type="number" step="0.01" id="frais_deplacement_km" name="frais_deplacement_km"
+                                    class="form-control" value="{{ parametres.frais_deplacement_km or 0.5 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Informations
+                            légales</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="form-label" for="siret">SIRET</label>
+                                <input type="text" id="siret" name="siret" class="form-control"
+                                    value="{{ parametres.siret or '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="tva_intracommunautaire">TVA Intracommunautaire</label>
+                                <input type="text" id="tva_intracommunautaire" name="tva_intracommunautaire"
+                                    class="form-control" value="{{ parametres.tva_intracommunautaire or '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="forme_juridique">Forme juridique</label>
+                                <input type="text" id="forme_juridique" name="forme_juridique" class="form-control"
+                                    value="{{ parametres.forme_juridique or '' }}"
+                                    placeholder="Ex: SAS, SARL, Micro-entreprise">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="capital_social">Capital social</label>
+                                <input type="text" id="capital_social" name="capital_social" class="form-control"
+                                    value="{{ parametres.capital_social or '' }}" placeholder="Ex: 10 000 €">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="rcs_ville">RCS (ville)</label>
+                                <input type="text" id="rcs_ville" name="rcs_ville" class="form-control"
+                                    value="{{ parametres.rcs_ville or '' }}" placeholder="Ex: Paris">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="numero_rcs">Numéro RCS</label>
+                                <input type="text" id="numero_rcs" name="numero_rcs" class="form-control"
+                                    value="{{ parametres.numero_rcs or '' }}" placeholder="Ex: 123 456 789">
+                            </div>
+
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label" for="penalites_retard">Pénalités de retard</label>
+                                <input type="text" id="penalites_retard" name="penalites_retard" class="form-control"
+                                    value="{{ parametres.penalites_retard or '' }}"
+                                    placeholder="Ex: 3x le taux d’intérêt légal (art. L441-10 C. com.)">
+                            </div>
+
+                            <div class="form-group md:col-span-2">
+                                <label class="form-label" for="escompte">Escompte pour paiement anticipé</label>
+                                <input type="text" id="escompte" name="escompte" class="form-control"
+                                    value="{{ parametres.escompte or '' }}"
+                                    placeholder="Ex: Pas d’escompte pour paiement anticipé">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="indemnite_recouvrement">Indemnité forfaitaire
+                                    (recouvrement)</label>
+                                <input type="number" step="0.01" id="indemnite_recouvrement"
+                                    name="indemnite_recouvrement" class="form-control"
+                                    value="{{ parametres.indemnite_recouvrement or 40.0 }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="taux_tva_defaut">Taux de TVA par défaut (%)</label>
+                                <input type="number" step="0.1" id="taux_tva_defaut" name="taux_tva_defaut"
+                                    class="form-control" value="{{ parametres.taux_tva_defaut or 20.0 }}">
+                            </div>
+
+                            <div class="form-group flex items-center gap-3">
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="checkbox" name="tva_non_applicable" value="1"
+                                        class="form-checkbox h-5 w-5 text-blue-600" {{ 'checked' if
+                                        parametres.tva_non_applicable else '' }}>
+                                    <span class="text-gray-700">TVA non applicable (art. 293 B)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intelligence artificielle -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-robot"></i>
+                        Intelligence artificielle (Groq)
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Configurez la clé API utilisée par l'assistant IA</p>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label" for="groq_api_key">Clé API Groq</label>
+                            <input type="password" id="groq_api_key" name="groq_api_key" class="form-control"
+                                placeholder="Laisser vide pour conserver la clé actuelle" autocomplete="new-password">
+                            <small class="text-muted">
+                                {% if parametres.groq_api_key %}
+                                Clé configurée. La variable d'environnement GROQ_API_KEY reste prioritaire.
+                                {% else %}
+                                Aucune clé enregistrée.
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" name="clear_groq_api_key" value="1"
+                                    class="form-checkbox h-5 w-5 text-red-600">
+                                <span class="text-gray-700">Effacer la clé enregistrée</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stripe / Paiements -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-credit-card"></i>
+                        Paiements en ligne (Stripe)
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Acceptez les paiements par carte bancaire sur vos devis et
+                        factures</p>
+                </div>
+                <div class="card-body">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-6">
+                        <div class="flex items-center space-x-3">
+                            <i class="fab fa-stripe text-4xl text-purple-600"></i>
+                            <div>
+                                <h4 class="font-bold text-gray-900">Activer les paiements Stripe</h4>
+                                <p class="text-sm text-gray-500">Permet aux clients de payer en ligne</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="stripe_enabled" value="1" {{ 'checked' if
+                                parametres.stripe_enabled else '' }}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="stripe_public_key">Clé Publique (Publishable Key)</label>
+                            <input type="text" id="stripe_public_key" name="stripe_public_key"
+                                class="form-control font-mono text-sm" value="{{ parametres.stripe_public_key or '' }}"
+                                placeholder="pk_test_...">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="stripe_secret_key">Clé Secrète (Secret Key)</label>
+                            <input type="password" id="stripe_secret_key" name="stripe_secret_key"
+                                class="form-control font-mono text-sm"
+                                placeholder="sk_test_... (Laisser vide pour ne pas changer)"
+                                autocomplete="new-password">
+                            {% if parametres.stripe_secret_key %}
+                            <small class="text-green-600 flex items-center mt-1">
+                                <i class="fas fa-check-circle mr-1"></i> Clé secrète configurée
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coordonnées bancaires (RIB) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-university"></i>
+                        Coordonnées bancaires (RIB)
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Chiffrées au repos via APP_ENCRYPTION_KEY</p>
+                </div>
+                <div class="card-body">
+                    {% if not encryption_ready %}
+                    <div class="alert alert-warning">
+                        APP_ENCRYPTION_KEY n’est pas définie. Impossible d’enregistrer le RIB.
+                    </div>
+                    {% endif %}
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="rib_titulaire">Titulaire du compte</label>
+                            <input type="text" id="rib_titulaire" name="rib_titulaire"
+                                class="form-control"
+                                placeholder="{% if rib_masked.titulaire %}Laisser vide pour conserver ({{ rib_masked.titulaire }}){% else %}Nom / Société{% endif %}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="rib_iban">IBAN</label>
+                            <input type="text" id="rib_iban" name="rib_iban"
+                                class="form-control font-mono text-sm"
+                                placeholder="{% if rib_masked.iban %}Laisser vide pour conserver ({{ rib_masked.iban }}){% else %}FR76...{% endif %}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="rib_bic">BIC</label>
+                            <input type="text" id="rib_bic" name="rib_bic"
+                                class="form-control font-mono text-sm"
+                                placeholder="{% if rib_masked.bic %}Laisser vide pour conserver ({{ rib_masked.bic }}){% else %}BIC...{% endif %}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="rib_banque">Banque</label>
+                            <input type="text" id="rib_banque" name="rib_banque"
+                                class="form-control"
+                                placeholder="{% if rib_masked.banque %}Laisser vide pour conserver ({{ rib_masked.banque }}){% else %}Nom de la banque{% endif %}">
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" name="clear_rib" value="1"
+                                    class="form-checkbox h-5 w-5 text-red-600">
+                                <span class="text-gray-700">Effacer le RIB enregistré</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personnalisation -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-palette"></i>
+                        Personnalisation
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="couleur_principale">Couleur principale</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="couleur_principale" name="couleur_principale"
+                                    class="form-control w-16 h-10"
+                                    value="{{ parametres.couleur_principale or '#667eea' }}">
+                                <input type="text" class="form-control"
+                                    value="{{ parametres.couleur_principale or '#667eea' }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="couleur_secondaire">Couleur secondaire</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="couleur_secondaire" name="couleur_secondaire"
+                                    class="form-control w-16 h-10"
+                                    value="{{ parametres.couleur_secondaire or '#764ba2' }}">
+                                <input type="text" class="form-control"
+                                    value="{{ parametres.couleur_secondaire or '#764ba2' }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="devise">Devise</label>
+                            <select id="devise" name="devise" class="form-control">
+                                <option value="EUR" {% if parametres.devise=='EUR' %}selected{% endif %}>EUR (€)
+                                </option>
+                                <option value="USD" {% if parametres.devise=='USD' %}selected{% endif %}>USD ($)
+                                </option>
+                                <option value="GBP" {% if parametres.devise=='GBP' %}selected{% endif %}>GBP (£)
+                                </option>
+                                <option value="CHF" {% if parametres.devise=='CHF' %}selected{% endif %}>CHF (CHF)
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="langue">Langue</label>
+                            <select id="langue" name="langue" class="form-control">
+                                <option value="fr" {% if parametres.langue=='fr' %}selected{% endif %}>Français</option>
+                                <option value="en" {% if parametres.langue=='en' %}selected{% endif %}>English</option>
+                                <option value="es" {% if parametres.langue=='es' %}selected{% endif %}>Español</option>
+                                <option value="de" {% if parametres.langue=='de' %}selected{% endif %}>Deutsch</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aperçu des couleurs -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-eye"></i>
+                        Aperçu des couleurs
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 rounded-lg"
+                            style="background-color: {{ parametres.couleur_principale or '#667eea' }}; color: white;">
+                            <h4 class="font-bold">Couleur principale</h4>
+                            <p>Utilisée pour les boutons et éléments principaux</p>
+                        </div>
+
+                        <div class="p-4 rounded-lg"
+                            style="background-color: {{ parametres.couleur_secondaire or '#764ba2' }}; color: white;">
+                            <h4 class="font-bold">Couleur secondaire</h4>
+                            <p>Utilisée pour les accents et éléments secondaires</p>
+                        </div>
+
+                        <div class="p-4 rounded-lg border-2"
+                            style="border-color: {{ parametres.couleur_principale or '#667eea' }};">
+                            <h4 class="font-bold" style="color: {{ parametres.couleur_principale or '#667eea' }};">
+                                Exemple de devis</h4>
+                            <p>Les devis utiliseront ces couleurs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export des données -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-download"></i>
+                        Export des données
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <a href="{{ url_for('export_parametres') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-file-export"></i>
+                            Export Paramètres
+                        </a>
+
+                        <a href="{{ url_for('export_complet') }}" class="btn btn-outline-success">
+                            <i class="fas fa-database"></i>
+                            Export Complet
+                        </a>
+
+                        <a href="{{ url_for('export_statistiques') }}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar"></i>
+                            Export Statistiques
+                        </a>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-bold text-blue-800 mb-2">
+                            <i class="fas fa-info-circle"></i>
+                            Informations sur les exports
+                        </h4>
+                        <ul class="text-sm text-blue-700 space-y-1">
+                            <li><strong>Export Paramètres :</strong> Fichier JSON avec les informations de l'entreprise
+                            </li>
+                            <li><strong>Export Complet :</strong> Toutes les données de l'application (utilisateurs,
+                                Prestataires, missions, devis, etc.)</li>
+                            <li><strong>Export Statistiques :</strong> Statistiques et métriques de l'application</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modules optionnels -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-puzzle-piece"></i>
+                        Modules optionnels
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">Activez ou désactivez les fonctionnalités selon vos besoins
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Export Excel -->
+                        <div
+                            class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors module-card">
+                            <div class="flex items-center space-x-3">
+                                <div
+                                    class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center module-icon">
+                                    <i class="fas fa-file-excel text-green-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Export Excel</h4>
+                                    <p class="text-sm text-gray-500">Export des données en format Excel</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="module_excel_export" value="1" class="sr-only peer"
+                                    {{ 'checked' if parametres.module_excel_export else '' }}>
+                                <div
+                                    class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500">
+                                </div>
+                                <span class="ml-3 text-sm font-medium text-gray-700">
+                                    {{ 'ON' if parametres.module_excel_export else 'OFF' }}
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Génération PDF -->
+                        <div
+                            class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors module-card">
+                            <div class="flex items-center space-x-3">
+                                <div
+                                    class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center module-icon">
+                                    <i class="fas fa-file-pdf text-red-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Génération PDF</h4>
+                                    <p class="text-sm text-gray-500">Devis et factures en format PDF</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="module_pdf_generation" value="1" class="sr-only peer"
+                                    {{ 'checked' if parametres.module_pdf_generation else '' }}>
+                                <div
+                                    class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500">
+                                </div>
+                                <span class="ml-3 text-sm font-medium text-gray-700">
+                                    {{ 'ON' if parametres.module_pdf_generation else 'OFF' }}
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Rapports financiers -->
+                        <div
+                            class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors module-card">
+                            <div class="flex items-center space-x-3">
+                                <div
+                                    class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center module-icon">
+                                    <i class="fas fa-chart-line text-purple-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Rapports financiers</h4>
+                                    <p class="text-sm text-gray-500">Analyses et statistiques avancées</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="module_financial_reports" value="1" class="sr-only peer"
+                                    {{ 'checked' if parametres.module_financial_reports else '' }}>
+                                <div
+                                    class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-500">
+                                </div>
+                                <span class="ml-3 text-sm font-medium text-gray-700">
+                                    {{ 'ON' if parametres.module_financial_reports else 'OFF' }}
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Notifications -->
+                        <div
+                            class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors module-card">
+                            <div class="flex items-center space-x-3">
+                                <div
+                                    class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center module-icon">
+                                    <i class="fas fa-bell text-yellow-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Notifications</h4>
+                                    <p class="text-sm text-gray-500">Alertes et rappels automatiques</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="module_notifications" value="1" class="sr-only peer"
+                                    {{ 'checked' if parametres.module_notifications else '' }}>
+                                <div
+                                    class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500">
+                                </div>
+                                <span class="ml-3 text-sm font-medium text-gray-700">
+                                    {{ 'ON' if parametres.module_notifications else 'OFF' }}
+                                </span>
+                            </label>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour au dashboard
+                </a>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Sauvegarder les paramètres
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Synchroniser les couleurs
+    document.getElementById('couleur_principale').addEventListener('change', function () {
+        this.nextElementSibling.value = this.value;
+        updatePreview();
+    });
+
+    document.getElementById('couleur_secondaire').addEventListener('change', function () {
+        this.nextElementSibling.value = this.value;
+        updatePreview();
+    });
+
+    function updatePreview() {
+        const couleurPrincipale = document.getElementById('couleur_principale').value;
+        const couleurSecondaire = document.getElementById('couleur_secondaire').value;
+
+        // Mettre à jour l'aperçu
+        const previews = document.querySelectorAll('.card-body > div');
+        if (previews[2]) {
+            previews[2].style.backgroundColor = couleurPrincipale;
+        }
+        if (previews[3]) {
+            previews[3].style.backgroundColor = couleurSecondaire;
+        }
+        if (previews[4]) {
+            previews[4].style.borderColor = couleurPrincipale;
+            const title = previews[4].querySelector('h4');
+            if (title) {
+                title.style.color = couleurPrincipale;
+            }
+        }
+    }
+
+    // Prévisualisation en temps réel du branding
+    document.getElementById('slogan').addEventListener('input', function () {
+        const previewSlogan = document.getElementById('preview-slogan');
+        if (previewSlogan) {
+            previewSlogan.textContent = this.value || 'Votre slogan apparaîtra ici';
+        }
+    });
+
+    document.getElementById('description_courte').addEventListener('input', function () {
+        const previewDescription = document.getElementById('preview-description');
+        if (previewDescription) {
+            previewDescription.textContent = this.value;
+            previewDescription.style.display = this.value ? 'block' : 'none';
+        }
+    });
+
+    // Gestion des boutons glissants (toggle switches)
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggles = document.querySelectorAll('input[type="checkbox"][name^="module_"]');
+
+        toggles.forEach(toggle => {
+            // Mettre à jour le texte ON/OFF au chargement
+            updateToggleText(toggle);
+
+            // Mettre à jour le texte ON/OFF lors du changement
+            toggle.addEventListener('change', function () {
+                updateToggleText(this);
+                // Ajouter une animation de feedback
+                this.closest('.flex').classList.add('animate-pulse');
+                setTimeout(() => {
+                    this.closest('.flex').classList.remove('animate-pulse');
+                }, 300);
+            });
+        });
+    });
+
+    function updateToggleText(toggle) {
+        const span = toggle.parentElement.querySelector('span');
+        if (span) {
+            span.textContent = toggle.checked ? 'ON' : 'OFF';
+            // Changer la couleur du texte selon l'état
+            span.className = toggle.checked ?
+                'ml-3 text-sm font-medium text-green-600' :
+                'ml-3 text-sm font-medium text-gray-500';
+        }
+    }
+
+    // Animation de survol pour les cartes de modules
+    document.addEventListener('DOMContentLoaded', function () {
+        const moduleCards = document.querySelectorAll('.grid .flex.items-center.justify-between');
+
+        moduleCards.forEach(card => {
+            card.addEventListener('mouseenter', function () {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+            });
+
+            card.addEventListener('mouseleave', function () {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        });
+    });
+</script>
+
+<style>
+    .form-control[type="color"] {
+        padding: 0;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .form-control[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+
+    .form-control[type="color"]::-webkit-color-swatch {
+        border: none;
+        border-radius: 4px;
+    }
+
+    /* Styles pour les boutons glissants */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 3.5rem;
+        height: 1.75rem;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 1.75rem;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 1.25rem;
+        width: 1.25rem;
+        left: 0.25rem;
+        bottom: 0.25rem;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked+.slider {
+        background-color: #3b82f6;
+    }
+
+    input:checked+.slider:before {
+        transform: translateX(1.75rem);
+    }
+
+    /* Animation de survol pour les cartes de modules */
+    .module-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .module-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Animation de feedback pour les toggles */
+    @keyframes togglePulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .toggle-feedback {
+        animation: togglePulse 0.3s ease-in-out;
+    }
+
+    /* Styles pour les icônes des modules */
+    .module-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .module-card:hover .module-icon {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Facture {{ facture.numero }} - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-detail-header">
+        <div>
+            <p class="finance-eyebrow">Facture</p>
+            <h1 class="finance-detail-title">{{ facture.numero }}</h1>
+            <p class="finance-subtitle">{{ facture.client_nom }} · {{ facture.date_prestation.strftime('%d/%m/%Y') }}</p>
+        </div>
+        <div class="finance-detail-actions">
+            {% if parametres and parametres.signature_entreprise_path %}
+            <a href="{{ url_for('facture_pdf', facture_id=facture.id, signature=1) }}" class="btn btn-primary">
+                <i class="fas fa-file-pdf"></i> PDF signé
+            </a>
+            <a href="{{ url_for('facture_pdf', facture_id=facture.id, signature=0) }}" class="btn btn-outline-primary">
+                <i class="fas fa-file-pdf"></i> PDF sans signature
+            </a>
+            {% else %}
+            <a href="{{ url_for('facture_pdf', facture_id=facture.id) }}" class="btn btn-primary">
+                <i class="fas fa-file-pdf"></i> Générer PDF
+            </a>
+            {% endif %}
+            {% if current_user.role in ['admin', 'manager'] and facture.statut not in ['envoyee', 'payee', 'partiellement_payee', 'annulee'] %}
+            <a href="{{ url_for('modifier_facture', facture_id=facture.id) }}" class="btn btn-outline-warning">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            {% endif %}
+            
+            {% if current_user.role in ['admin', 'manager'] and facture.statut not in ['annulee','brouillon'] and facture.total_avoirs < facture.montant_ttc %}
+            <a href="{{ url_for('creer_avoir', facture_id=facture.id) }}" class="btn btn-outline-danger">
+                <i class="fas fa-receipt"></i> Émettre un avoir
+            </a>
+            {% endif %}
+<a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <div class="finance-split">
+        <div class="finance-shell">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informations générales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Client</h6>
+                            <p><strong>{{ facture.client_nom }}</strong></p>
+                            {% if facture.client_email %}<p><i class="fas fa-envelope"></i> {{ facture.client_email }}</p>{% endif %}
+                            {% if facture.client_telephone %}<p><i class="fas fa-phone"></i> {{ facture.client_telephone }}</p>{% endif %}
+                            {% if facture.client_adresse %}<p><i class="fas fa-map-marker-alt"></i> {{ facture.client_adresse }}</p>{% endif %}
+                            {% if facture.client_siren %}<p><i class="fas fa-id-card"></i> SIREN : {{ facture.client_siren }}</p>{% endif %}
+                            {% if facture.client_tva %}<p><i class="fas fa-receipt"></i> TVA : {{ facture.client_tva }}</p>{% endif %}
+                            {% if facture.adresse_livraison %}<p><i class="fas fa-truck"></i> Livraison : {{ facture.adresse_livraison }}</p>{% endif %}
+                            {% if facture.numero_bon_commande %}<p><i class="fas fa-file-signature"></i> Bon de commande : {{ facture.numero_bon_commande }}</p>{% endif %}
+                            {% if facture.client_professionnel %}<p><i class="fas fa-briefcase"></i> Client professionnel</p>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Mission</h6>
+                            <p><strong>{{ facture.prestation_titre }}</strong></p>
+                            <p><i class="fas fa-calendar"></i> {{ facture.date_prestation.strftime('%d/%m/%Y') }}</p>
+                            <p><i class="fas fa-clock"></i> {{ facture.heure_debut.strftime('%H:%M') }} - {{ facture.heure_fin.strftime('%H:%M') }}</p>
+                            <p><i class="fas fa-map-marker-alt"></i> {{ facture.lieu }}</p>
+                            {% if facture.dj %}<p><i class="fas fa-user"></i> {{ facture.dj.nom }}</p>{% endif %}
+                            {% if facture.nature_operation %}<p><i class="fas fa-clipboard-list"></i> Nature : {{ facture.nature_operation }}</p>{% endif %}
+                            {% if facture.tva_sur_debits %}<p><i class="fas fa-check-circle"></i> TVA sur les débits</p>{% endif %}
+                        </div>
+                    </div>
+                    {% if facture.prestation_description %}
+                    <hr>
+                    <h6>Description</h6>
+                    <p>{{ facture.prestation_description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% set materiel_ns = namespace(assignations=[]) %}
+            {% if facture.prestation %}
+                {% set materiel_ns.assignations = facture.prestation.materiel_assignations %}
+            {% elif facture.devis and facture.devis.prestation %}
+                {% set materiel_ns.assignations = facture.devis.prestation.materiel_assignations %}
+            {% elif facture.devis and facture.devis.reservation_origine %}
+                {% set materiel_ns.assignations = facture.devis.reservation_origine.materiel_assignations %}
+            {% endif %}
+            {% set materiel_total = namespace(value=0) %}
+            {% if materiel_ns.assignations %}
+                {% for assignation in materiel_ns.assignations %}
+                    {% set prix_unitaire = (assignation.materiel.prix_location if assignation.materiel and assignation.materiel.prix_location is not none else 0) %}
+                    {% set materiel_total.value = materiel_total.value + (prix_unitaire * assignation.quantite) %}
+                {% endfor %}
+            {% endif %}
+            {% set has_materiel_assignations = materiel_ns.assignations|length > 0 %}
+            {% if has_materiel_assignations %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Équipement inclus</h5>
+                </div>
+                <div class="card-body">
+                    {% set total_ns = namespace(total=0) %}
+                    <div class="table-responsive">
+                        <table class="table finance-table scan-aligned-table scan-cols-4" data-no-contextbox="true">
+                            <thead>
+                                <tr>
+                                    <th>Matériel</th>
+                                    <th class="text-end">Quantité</th>
+                                    <th class="text-end">Prix unitaire</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignation in materiel_ns.assignations %}
+                                {% set materiel = assignation.materiel %}
+                                {% set prix_unitaire = (materiel.prix_location if materiel and materiel.prix_location is not none else 0) %}
+                                {% set ligne_total = prix_unitaire * assignation.quantite %}
+                                {% set total_ns.total = total_ns.total + ligne_total %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ materiel.nom if materiel else 'Matériel supprimé' }}</div>
+                                        <div class="finance-meta">{{ materiel.categorie if materiel and materiel.categorie else 'Non défini' }}{% if materiel and materiel.local %} - {{ materiel.local.nom }}{% endif %}</div>
+                                    </td>
+                                    <td class="text-end">{{ assignation.quantite }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(prix_unitaire) }} €</td>
+                                    <td class="text-end">{{ "%.2f"|format(ligne_total) }} €</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-semibold">
+                                    <td colspan="3">Total équipement</td>
+                                    <td class="text-end">{{ "%.2f"|format(total_ns.total) }} €</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            
+            <div class="card mt-4 invoice-preview-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-eye"></i> Aperçu facture</h5>
+                </div>
+                <div class="card-body">
+                    <div id="invoicePreview" class="invoice-preview is-collapsed">
+                        <div class="invoice-preview-header">
+                            <div>
+                                <p class="invoice-preview-kicker">Facture</p>
+                                <h4>Facture {{ facture.numero }}</h4>
+                                <p class="finance-meta">Émise le {{ facture.date_creation.strftime('%d/%m/%Y') }}</p>
+                            </div>
+                            <div class="invoice-preview-total">
+                                <span>Total TTC</span>
+                                <strong>{{ "%.2f"|format(facture.montant_ttc) }} €</strong>
+                            </div>
+                        </div>
+                        <div class="invoice-preview-grid">
+                            <div>
+                                <p class="invoice-preview-label">Client</p>
+                                <p class="invoice-preview-value">{{ facture.client_nom }}</p>
+                                {% if facture.client_email %}<p class="finance-meta">{{ facture.client_email }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <p class="invoice-preview-label">Mission</p>
+                                <p class="invoice-preview-value">{{ facture.prestation_titre }}</p>
+                                <p class="finance-meta">{{ facture.date_prestation.strftime('%d/%m/%Y') }} · {{ facture.lieu }}</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="invoice-preview-table scan-aligned-table scan-cols-4">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th class="text-end">Montant</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Prestation ({{ facture.duree_heures }} h)</td>
+                                        <td class="text-end">{{ "%.2f"|format(facture.tarif_horaire * facture.duree_heures) }} €</td>
+                                    </tr>
+                                    {% if facture.frais_transport > 0 %}
+                                    <tr>
+                                        <td>Frais de déplacement</td>
+                                        <td class="text-end">{{ "%.2f"|format(facture.frais_transport) }} €</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if has_materiel_assignations and materiel_total.value > 0 %}
+                                    <tr>
+                                        <td>Matériel inclus</td>
+                                        <td class="text-end">{{ "%.2f"|format(materiel_total.value) }} €</td>
+                                    </tr>
+                                    {% elif facture.frais_materiel > 0 %}
+                                    <tr>
+                                        <td>Frais matériel</td>
+                                        <td class="text-end">{{ "%.2f"|format(facture.frais_materiel) }} €</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="invoice-preview-totals">
+                            <div>
+                                <span>Montant HT</span>
+                                <strong>{{ "%.2f"|format(facture.montant_ht) }} €</strong>
+                            </div>
+                            <div>
+                                <span>TVA ({{ "%.1f"|format(facture.taux_tva) }}%)</span>
+                                <strong>{{ "%.2f"|format(facture.montant_tva) }} €</strong>
+                            </div>
+                        </div>
+                        <div class="invoice-preview-mask">
+                            <button type="button" class="btn btn-primary" onclick="revealInvoicePreview('{{ url_for('facture_pdf', facture_id=facture.id) }}')">
+                                <i class="fas fa-file-pdf"></i> Générer & voir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+<div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-euro-sign"></i> Détail de la tarification</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table finance-table scan-aligned-table scan-cols-2" data-no-contextbox="true">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Tarif horaire ({{ facture.duree_heures }} h)</td>
+                                    <td class="text-end">{{ "%.2f"|format(facture.tarif_horaire * facture.duree_heures) }} €</td>
+                                </tr>
+                                {% if facture.frais_transport > 0 %}
+                                <tr>
+                                    <td>Frais de transport</td>
+                                    <td class="text-end">{{ "%.2f"|format(facture.frais_transport) }} €</td>
+                                </tr>
+                                {% endif %}
+                                {% if facture.frais_materiel > 0 and not has_materiel_assignations %}
+                                <tr>
+                                    <td>Frais équipement</td>
+                                    <td class="text-end">{{ "%.2f"|format(facture.frais_materiel) }} €</td>
+                                </tr>
+                                {% endif %}
+                                {% if facture.remise_pourcentage > 0 or facture.remise_montant > 0 %}
+                                <tr>
+                                    <td>Remise</td>
+                                    <td class="text-end text-danger">
+                                        {% if facture.remise_pourcentage > 0 %}-{{ "%.2f"|format(facture.remise_pourcentage) }}%{% else %}-{{ "%.2f"|format(facture.remise_montant) }}€{% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Montant HT</strong></td>
+                                    <td class="text-end"><strong>{{ "%.2f"|format(facture.montant_ht) }} €</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>TVA ({{ "%.1f"|format(facture.taux_tva) }}%)</td>
+                                    <td class="text-end">{{ "%.2f"|format(facture.montant_tva) }} €</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total TTC</strong></td>
+                                    <td class="text-end"><strong>{{ "%.2f"|format(facture.montant_ttc) }} €</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            
+            {% if facture.avoirs %}
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-receipt"></i> Avoirs émis</h5></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table finance-table scan-aligned-table scan-cols-4" data-no-contextbox="true">
+                            <thead>
+                                <tr>
+                                    <th>Numéro</th>
+                                    <th>Date</th>
+                                    <th>Montant TTC</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for avoir in facture.avoirs %}
+                                <tr>
+                                    <td>{{ avoir.numero }}</td>
+                                    <td>{{ avoir.date_creation.strftime('%d/%m/%Y') if avoir.date_creation else '-' }}</td>
+                                    <td>{{ "%.2f"|format(avoir.montant_ttc) }} €</td>
+                                    <td>{{ 'Annulé' if avoir.statut == 'annule' else 'Émis' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+{% if facture.notes %}
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-sticky-note"></i> Notes</h5></div>
+                <div class="card-body">{{ facture.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-info"></i> Statut</h5></div>
+                <div class="card-body text-center">
+                    {% set facture_label = 'Partiellement payée' if facture.statut == 'partiellement_payee' else facture.statut|replace('_', ' ')|title %}
+                    <span class="finance-badge {{ 'finance-badge-success' if facture.statut == 'payee' else 'finance-badge-info' if facture.statut == 'partiellement_payee' else 'finance-badge-warning' if facture.statut == 'envoyee' else 'finance-badge-danger' if facture.statut == 'annulee' else 'finance-badge-danger' if facture.est_en_retard else 'finance-badge-neutral' }}">
+                        {{ facture_label }}
+                        {% if facture.est_en_retard %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                    </span>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6>Montant TTC</h6>
+                            <h4 class="text-success">{{ "%.2f"|format(facture.montant_ttc) }}€</h4>
+                        </div>
+                        <div class="col-6">
+                            <h6>Payé</h6>
+                            <h4 class="text-primary">{{ "%.2f"|format(facture.montant_paye) }}€</h4>
+                        </div>
+                    </div>
+                    {% if facture.total_avoirs > 0 %}
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6>Avoirs</h6>
+                            <h4 class="text-muted">{{ "%.2f"|format(facture.total_avoirs) }}€</h4>
+                        </div>
+                        <div class="col-6">
+                            <h6>Net à payer</h6>
+                            <h4 class="text-primary">{{ "%.2f"|format(facture.montant_du_net) }}€</h4>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if facture.montant_restant > 0 %}
+                    <hr>
+                    <h6>Reste à payer</h6>
+                    <h4 class="text-danger">{{ "%.2f"|format(facture.montant_restant) }}€</h4>
+                    {% endif %}
+                    {% if facture.date_echeance %}
+                    <hr>
+                    <h6>Date d'échéance</h6>
+                    <p class="mb-0">{{ facture.date_echeance.strftime('%d/%m/%Y') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if facture.statut in ['envoyee', 'payee', 'partiellement_payee', 'annulee'] %}
+            <div class="alert alert-info mt-3">Cette facture est verrouillée et ne peut plus être modifiée.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function revealInvoicePreview(pdfUrl) {
+        const preview = document.getElementById('invoicePreview');
+        if (!preview) {
+            if (pdfUrl) {
+                window.open(pdfUrl, '_blank');
+            }
+            return;
+        }
+        preview.classList.remove('is-collapsed');
+        preview.classList.add('is-revealed');
+        const mask = preview.querySelector('.invoice-preview-mask');
+        if (mask) {
+            mask.remove();
+        }
+        if (pdfUrl) {
+            window.open(pdfUrl, '_blank');
+        }
+    }
+</script>
+{% endblock %}

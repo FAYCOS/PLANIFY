@@ -1,0 +1,54 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact" %}
+{% block title %}Réservation confirmée{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="public-status success">
+            <div class="public-status-icon"><i class="fa-solid fa-check"></i></div>
+            <h1>Demande envoyée</h1>
+            <p>Votre réservation a bien été enregistrée.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p>Merci pour votre demande de réservation. Notre équipe va l'étudier et vous contactera rapidement pour confirmer la disponibilité et préciser les détails de la mission.</p>
+        <div class="context-card" style="margin-top: 18px;">
+            <div class="context-card-header">
+                <div class="context-title">Récapitulatif</div>
+            </div>
+            <div class="context-row">
+                <span>Numéro de demande</span>
+                <strong>#{{ reference or 'En cours de génération' }}</strong>
+            </div>
+            <div class="context-row">
+                <span>Email de confirmation</span>
+                <strong>Envoyé à {{ email or 'votre adresse' }}</strong>
+            </div>
+            <div class="context-row">
+                <span>Délai de réponse</span>
+                <strong>24-48 heures ouvrées</strong>
+            </div>
+        </div>
+        <div class="public-actions" style="justify-content:flex-start; margin-top: 18px;">
+            <a href="/" class="btn btn-primary">Retour à l'accueil</a>
+            <a href="/reservation" class="btn btn-outline-secondary">Nouvelle demande</a>
+        </div>
+    </div>
+</div>
+
+<div class="context-card">
+    <div class="context-card-header">
+        <div class="context-title">Et ensuite ?</div>
+    </div>
+    <div class="context-row"><span>1.</span><strong>Nous examinons votre demande</strong></div>
+    <div class="context-row"><span>2.</span><strong>Nous vérifions les disponibilités</strong></div>
+    <div class="context-row"><span>3.</span><strong>Nous vous contactons pour finaliser</strong></div>
+    <div class="public-note" style="text-align:left; margin-top: 12px;">
+        Questions ? Contactez-nous : <a href="mailto:greg.nizery@outlook.fr">greg.nizery@outlook.fr</a> | 06 46 42 97 06
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--wide reservation-shell" %}
+{% block title %}Réserver une mission | Planify{% endblock %}
+
+{% block extra_head %}
+<link href="{{ url_for('static', filename='css/ai_chat.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+</div>
+
+<div class="card public-hero hero">
+    <div class="hero-content">
+        <div class="hero-logo">P</div>
+        <h1 class="hero-title">Réservez votre mission</h1>
+        <p class="hero-subtitle">Une mission réussie commence par une organisation claire. Remplissez ce formulaire et nous nous occupons du reste.</p>
+    </div>
+</div>
+
+<div class="form-container">
+    <div class="form-card">
+        <form id="reservationForm" action="/api/reservation" method="POST" class="form-body">
+            <input type="hidden" name="public_token" value="{{ public_api_token or '' }}">
+
+            <div class="form-section">
+                <h2 class="section-title">Vos informations</h2>
+                <p class="section-description">Pour que nous puissions vous contacter rapidement</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="nom">Nom complet</label>
+                        <input type="text" class="form-input" id="nom" name="nom" placeholder="Jean Dupont" required autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="telephone">Téléphone</label>
+                        <input type="tel" class="form-input" id="telephone" name="telephone" placeholder="06 12 34 56 78" pattern="[0-9\s+\-\(\).]+" required autocomplete="tel">
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="email">Email</label>
+                        <input type="email" class="form-input" id="email" name="email" placeholder="jean.dupont@example.com" required autocomplete="email">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2 class="section-title">Votre mission</h2>
+                <p class="section-description">Parlez-nous de votre projet</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="type_evenement">Type de mission</label>
+                        <select class="form-select" id="type_evenement" name="type_evenement" required>
+                            <option value="">Sélectionnez...</option>
+                            <option value="mariage">Mariage</option>
+                            <option value="anniversaire">Anniversaire</option>
+                            <option value="soiree_entreprise">Soirée d'entreprise</option>
+                            <option value="soiree_privee">Soirée privée</option>
+                            <option value="concert">Concert</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="nb_invites">Nombre de participants</label>
+                        <input type="number" class="form-input" id="nb_invites" name="nb_invites" placeholder="100" min="1" required>
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="date">Date</label>
+                        <input type="date" class="form-input" id="date" name="date" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="heure_debut">Heure de début</label>
+                        <input type="time" class="form-input" id="heure_debut" name="heure_debut" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="heure_fin">Heure de fin</label>
+                        <input type="time" class="form-input" id="heure_fin" name="heure_fin" required>
+                        <small class="form-help">Pour calculer la durée complète de la mission</small>
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="lieu">Lieu de la mission</label>
+                        <input type="text" class="form-input" id="lieu" name="lieu" placeholder="123 Rue de la Paix, 75001 Paris" required>
+                        <small class="form-help">Adresse complète du site</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2 class="section-title">Services souhaités</h2>
+                <p class="section-description">Sélectionnez les services dont vous avez besoin</p>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="services" value="dj" id="service_dj">
+                        Prestataire principal
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="services" value="sonorisation" id="service_sono">
+                        Support technique
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="services" value="eclairage" id="service_eclairage">
+                        Équipement & effets
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="services" value="karaoke" id="service_karaoke">
+                        Option karaoké
+                    </label>
+                </div>
+
+                <div class="form-row single" style="margin-top: 24px;">
+                    <div class="form-group">
+                        <label class="form-label" for="preferences">Préférences / contraintes</label>
+                        <textarea class="form-textarea" id="preferences" name="preferences" placeholder="Décrivez vos contraintes, préférences et objectifs..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2 class="section-title">Informations complémentaires</h2>
+                <p class="section-description">Optionnel - Aidez-nous à mieux vous connaître</p>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label" for="message">Message</label>
+                        <textarea class="form-textarea" id="message" name="message" placeholder="Toute information supplémentaire..."></textarea>
+                        <small class="form-help">Demandes spéciales, contraintes techniques, etc.</small>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="form-footer">
+            <div class="form-actions">
+                <p class="form-legal">
+                    En soumettant ce formulaire, vous acceptez que vos données soient traitées pour traiter votre demande.
+                </p>
+                <button type="submit" form="reservationForm" class="btn-submit" id="submitBtn">
+                    Envoyer
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer">
+    <div class="page-footer-content">
+        <p><strong>Planify</strong> — Gestion de missions professionnelles</p>
+        <p>Contact : <a href="mailto:greg.nizery@outlook.fr">greg.nizery@outlook.fr</a> • 06 46 42 97 06</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const form = document.getElementById('reservationForm');
+    const progressFill = document.getElementById('progressFill');
+    const inputs = form.querySelectorAll('input[required], select[required]');
+
+    function updateProgress() {
+        const total = inputs.length;
+        let filled = 0;
+
+        inputs.forEach(input => {
+            if (input.value.trim() !== '') {
+                filled++;
+            }
+        });
+
+        const percentage = (filled / total) * 100;
+        progressFill.style.width = percentage + '%';
+    }
+
+    inputs.forEach(input => {
+        input.addEventListener('input', updateProgress);
+        input.addEventListener('change', updateProgress);
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Envoi en cours...';
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/api/reservation', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                window.location.href = '/reservation/success';
+            } else {
+                let errorMessage = 'Une erreur est survenue :\n\n';
+
+                if (data.erreurs && data.erreurs.length > 0) {
+                    errorMessage += data.erreurs.join('\n');
+                } else if (data.message) {
+                    errorMessage += data.message;
+                    if (data.details) {
+                        errorMessage += '\n\n' + data.details;
+                    }
+                } else {
+                    errorMessage += 'Veuillez vérifier tous les champs du formulaire.';
+                }
+
+                alert(errorMessage);
+                console.error('Erreur validation:', data);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Envoyer <span>→</span>';
+            }
+        } catch (error) {
+            console.error('Erreur connexion:', error);
+            alert('Erreur de connexion au serveur. Veuillez réessayer.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Envoyer <span>→</span>';
+        }
+    });
+
+    const dateInput = document.getElementById('date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+
+    updateProgress();
+</script>
+<script src="{{ url_for('static', filename='js/ai_chat.js') }}"></script>
+{% endblock %}

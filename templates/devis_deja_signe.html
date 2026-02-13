@@ -1,0 +1,50 @@
+{% extends "public_base.html" %}
+{% set body_class = "public-shell--compact" %}
+{% block title %}Devis déjà signé{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="public-status success">
+            <div class="public-status-icon"><i class="fa-solid fa-check"></i></div>
+            <h1>Devis déjà signé</h1>
+            <p>Ce devis a été signé le {{ devis.signature_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="context-card">
+    <div class="context-card-header">
+        <div class="context-title">Détails du devis</div>
+    </div>
+    <div class="context-row">
+        <span>Numéro</span>
+        <strong>{{ devis.numero }}</strong>
+    </div>
+    <div class="context-row">
+        <span>Client</span>
+        <strong>{{ devis.client_nom }}</strong>
+    </div>
+    <div class="context-row">
+        <span>Mission</span>
+        <strong>{{ devis.prestation_titre }}</strong>
+    </div>
+    <div class="context-row">
+        <span>Date</span>
+        <strong>{{ devis.date_prestation.strftime('%d/%m/%Y') }}</strong>
+    </div>
+    <div class="context-row">
+        <span>Montant</span>
+        <strong style="color:#16A34A;">{{ "%.2f"|format(devis.montant_ttc) }} €</strong>
+    </div>
+</div>
+
+{% if devis.signature_image %}
+<div class="card">
+    <div class="card-body" style="text-align:center;">
+        <div class="public-note" style="margin-bottom:12px;">Signature électronique</div>
+        <img src="{{ devis.signature_image }}" alt="Signature" style="max-width:100%; border-radius:12px; border:1px solid var(--nav-border);">
+    </div>
+</div>
+{% endif %}
+{% endblock %}

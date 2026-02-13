@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <!-- Professional Black Logo for Planify -->
+  
+  <!-- Background -->
+  <rect width="200" height="200" fill="#000000" rx="40"/>
+  
+  <!-- Letter P - Modern & Geometric -->
+  <path d="M 60 50 L 60 150 M 60 50 L 110 50 C 127 50, 135 65, 135 80 C 135 95, 127 110, 110 110 L 60 110" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Accent Line - Professional Detail -->
+  <rect x="145" y="70" width="4" height="60" fill="#ffffff" rx="2"/>
+</svg>
+

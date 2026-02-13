@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Profil - Planify{% endblock %}
+
+{% block content %}
+<div class="content">
+    <header class="page-header mb-6">
+        <h1><i class="fas fa-user-circle"></i> Mon Profil</h1>
+        <p class="text-gray">Gérez vos informations personnelles et votre photo de profil</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Colonne de gauche : Photo et infos -->
+        <div class="lg:col-span-1">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="profile-photo-section">
+                        <div class="profile-photo-large">
+                            {% if user.photo_profil %}
+                                <img src="{{ url_for('static', filename=user.photo_profil) }}" alt="Photo de profil" id="preview_photo">
+                            {% else %}
+                                <div class="profile-photo-placeholder-large">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <h3 class="mt-4 mb-1">{{ user.prenom }} {{ user.nom }}</h3>
+                        <p class="text-sm text-gray-600 mb-2">@{{ user.username }}</p>
+                        
+                        <span class="badge badge-{{ 'blue' if user.role == 'admin' else 'green' if user.role == 'manager' else 'orange' if user.role == 'dj' else 'gray' }}">
+                            {{ user.role|capitalize }}
+                        </span>
+
+                        {% if user.role == 'technicien' %}
+                        <div class="mt-3 text-sm text-gray-600">
+                            <strong>Note moyenne :</strong>
+                            {% if rating_avg %}
+                                {{ '%.1f'|format(rating_avg) }}/5 ({{ rating_count }})
+                            {% else %}
+                                Aucune note
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mt-4 text-sm text-gray-600">
+                            <p><i class="fas fa-calendar-alt"></i> Membre depuis {{ user.date_creation.strftime('%B %Y') }}</p>
+                            {% if user.derniere_connexion %}
+                            <p class="mt-2"><i class="fas fa-clock"></i> Dernière connexion : {{ user.derniere_connexion.strftime('%d/%m/%Y %H:%M') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Colonne de droite : Formulaire -->
+        <div class="lg:col-span-2">
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Informations personnelles -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h3 class="text-xl font-semibold"><i class="fas fa-user"></i> Informations personnelles</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="prenom">Prénom *</label>
+                                <input type="text" id="prenom" name="prenom" class="form-control" value="{{ user.prenom }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="nom">Nom *</label>
+                                <input type="text" id="nom" name="nom" class="form-control" value="{{ user.nom }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">Email *</label>
+                                <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="telephone">Téléphone</label>
+                                <input type="tel" id="telephone" name="telephone" class="form-control" value="{{ user.telephone or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="date_naissance">Date de naissance</label>
+                            <input type="date" id="date_naissance" name="date_naissance" class="form-control" 
+                                   value="{{ user.date_naissance.strftime('%Y-%m-%d') if user.date_naissance else '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bio">Biographie</label>
+                            <textarea id="bio" name="bio" class="form-control" rows="3" 
+                                      placeholder="Parlez-nous un peu de vous...">{{ user.bio or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Adresse -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h3 class="text-xl font-semibold"><i class="fas fa-map-marker-alt"></i> Adresse</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="adresse">Adresse</label>
+                            <input type="text" id="adresse" name="adresse" class="form-control" 
+                                   value="{{ user.adresse or '' }}" placeholder="Numéro et nom de rue">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="code_postal">Code postal</label>
+                                <input type="text" id="code_postal" name="code_postal" class="form-control" 
+                                       value="{{ user.code_postal or '' }}" placeholder="75001">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="ville">Ville</label>
+                                <input type="text" id="ville" name="ville" class="form-control" 
+                                       value="{{ user.ville or '' }}" placeholder="Paris">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Photo de profil -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h3 class="text-xl font-semibold"><i class="fas fa-camera"></i> Photo de profil</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="photo_profil" class="file-label">
+                                <i class="fas fa-upload"></i> Choisir une photo
+                            </label>
+                            <input type="file" id="photo_profil" name="photo_profil" accept="image/*" class="file-input">
+                            <p class="text-sm text-gray-600 mt-2">Formats acceptés : JPG, PNG, GIF (max 5 MB)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Changement de mot de passe -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h3 class="text-xl font-semibold"><i class="fas fa-lock"></i> Changer de mot de passe</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="ancien_mdp">Ancien mot de passe</label>
+                            <input type="password" id="ancien_mdp" name="ancien_mdp" class="form-control" 
+                                   placeholder="Entrez votre mot de passe actuel">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nouveau_mdp">Nouveau mot de passe</label>
+                            <input type="password" id="nouveau_mdp" name="nouveau_mdp" class="form-control" 
+                                   placeholder="Entrez votre nouveau mot de passe">
+                        </div>
+                        
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-info-circle"></i> Laissez vide si vous ne souhaitez pas changer de mot de passe
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="flex justify-between items-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Annuler
+                    </a>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-photo-large {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.profile-photo-large img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--blue);
+    box-shadow: 0 8px 24px rgba(0, 113, 227, 0.2);
+}
+
+.profile-photo-placeholder-large {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-hover) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    color: white;
+    box-shadow: 0 8px 24px rgba(0, 113, 227, 0.2);
+}
+
+.file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--blue);
+    color: white;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.file-label:hover {
+    background: var(--blue-hover);
+    transform: scale(1.02);
+}
+
+.file-input {
+    display: none;
+}
+
+.badge-blue {
+    background: rgba(0, 113, 227, 0.1);
+    color: var(--blue);
+}
+
+.badge-green {
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--green);
+}
+
+.badge-orange {
+    background: rgba(255, 149, 0, 0.1);
+    color: var(--orange);
+}
+
+.badge-gray {
+    background: rgba(110, 110, 115, 0.1);
+    color: var(--text-gray);
+}
+
+.grid {
+    display: grid;
+}
+
+.grid-cols-1 {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+    .lg\\:grid-cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .lg\\:col-span-1 {
+        grid-column: span 1;
+    }
+    
+    .lg\\:col-span-2 {
+        grid-column: span 2;
+    }
+}
+
+.page-header {
+    margin-bottom: var(--space-6);
+}
+
+.page-header h1 {
+    font-size: var(--text-4xl);
+    margin-bottom: var(--space-2);
+}
+
+.card-header {
+    padding: var(--space-5);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--light-gray);
+}
+
+.card-body {
+    padding: var(--space-6);
+}
+</style>
+
+<script>
+// Prévisualisation de la photo
+document.getElementById('photo_profil').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('preview_photo');
+            const placeholder = document.querySelector('.profile-photo-placeholder-large');
+            
+            if (preview) {
+                preview.src = e.target.result;
+            } else if (placeholder) {
+                // Créer l'élément img s'il n'existe pas
+                const img = document.createElement('img');
+                img.id = 'preview_photo';
+                img.src = e.target.result;
+                img.alt = 'Photo de profil';
+                placeholder.parentNode.replaceChild(img, placeholder);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}
+

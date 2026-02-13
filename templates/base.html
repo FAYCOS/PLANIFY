@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Planify{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="public-api-token" content="{{ public_api_token or '' }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+    {% block extra_head %}{% endblock %}
+    <style>
+        :root {
+            --brand-primary: {{ parametres.couleur_principale if parametres and parametres.couleur_principale else '#1F6BFF' }};
+            --brand-secondary: {{ parametres.couleur_secondaire if parametres and parametres.couleur_secondaire else '#22D3EE' }};
+            --radius-md: {{ parametres.ui_radius if parametres and parametres.ui_radius else 14 }}px;
+            --font-base: {{ (parametres.ui_font if parametres and parametres.ui_font else 'Inter Tight')|tojson }};
+        }
+
+        body {
+            font-family: var(--font-base), system-ui, -apple-system, sans-serif;
+        }
+
+        .card,
+        .btn,
+        .form-control,
+        .form-select {
+            border-radius: var(--radius-md);
+        }
+
+        .btn-primary {
+            background: var(--brand-primary);
+            border-color: var(--brand-primary);
+        }
+
+        .btn-secondary {
+            border-color: var(--brand-secondary);
+        }
+
+        body.density-compact .card-body,
+        body.density-compact .card {
+            padding: 16px;
+        }
+
+        body.density-compact .form-group {
+            margin-bottom: 12px;
+        }
+
+        body.theme-soft .card {
+            background: #f7f9fc;
+            border-color: rgba(15, 23, 42, 0.08);
+        }
+
+        body.theme-contrast .card {
+            border: 2px solid rgba(15, 23, 42, 0.4);
+        }
+
+        /* Header user info styling */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .user-info:hover {
+            background: rgba(31, 107, 255, 0.08);
+            border-color: rgba(31, 107, 255, 0.3);
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--brand-primary);
+            box-shadow: 0 6px 14px rgba(31, 107, 255, 0.25);
+        }
+        
+        .user-avatar-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: var(--text-gray);
+            line-height: 1.2;
+        }
+        
+        .sidebar-footer {
+            padding: var(--space-4);
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            margin-top: auto;
+        }
+        
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(239, 68, 68, 0.18));
+            color: #C2410C;
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-logout:hover {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.26), rgba(239, 68, 68, 0.26));
+            transform: translateY(-1px);
+        }
+        
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 0;
+        }
+        
+        .page-title i {
+            color: var(--brand-primary);
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('table.scan-aligned-table tbody tr').forEach(row => {
+                if (row.querySelector('td[colspan]')) return;
+                row.classList.add('table-row-expandable');
+                row.addEventListener('click', (event) => {
+                    const target = event.target;
+                    if (target.closest('a, button, input, select, textarea, .btn, .dropdown, .btn-group')) {
+                        return;
+                    }
+                    row.classList.toggle('row-expanded');
+                });
+            });
+        });
+    </script>
+    {% if parametres and parametres.ui_custom_css %}
+    <style>
+        {{ parametres.ui_custom_css|safe }}
+    </style>
+    {% endif %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (!meta) return;
+            const token = meta.getAttribute('content');
+            if (!token) return;
+
+            document.querySelectorAll('form').forEach(form => {
+                const method = (form.getAttribute('method') || 'get').toLowerCase();
+                if (method === 'get') return;
+                if (form.dataset.noCsrf === 'true') return;
+                if (form.querySelector('input[name="csrf_token"]')) return;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrf_token';
+                input.value = token;
+                form.appendChild(input);
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('table.table').forEach(table => {
+                if (table.dataset.noContextbox === 'true') return;
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                if (!rows.length) return;
+
+                const list = document.createElement('div');
+                list.className = 'context-list animate-stagger';
+
+                rows.forEach(row => {
+                    const card = document.createElement('div');
+                    card.className = 'context-card';
+                    const cells = Array.from(row.children);
+                    cells.forEach((cell, idx) => {
+                        const rowEl = document.createElement('div');
+                        rowEl.className = 'context-row';
+
+                        const label = document.createElement('span');
+                        label.className = 'context-label';
+                        const fallbackLabel = cell.getAttribute('data-label') || `Champ ${idx + 1}`;
+                        label.textContent = headers[idx] || fallbackLabel;
+
+                        const value = document.createElement('span');
+                        value.className = 'context-value';
+                        const valueContent = document.createElement('span');
+                        valueContent.className = 'context-value-content';
+                        while (cell.firstChild) {
+                            valueContent.appendChild(cell.firstChild);
+                        }
+                        value.appendChild(valueContent);
+
+                        rowEl.appendChild(label);
+                        rowEl.appendChild(value);
+                        card.appendChild(rowEl);
+                    });
+                    list.appendChild(card);
+                });
+
+                const wrapper = table.closest('.table-responsive');
+                if (wrapper) {
+                    wrapper.replaceWith(list);
+                } else {
+                    table.replaceWith(list);
+                }
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const profile = "{{ parametres.terminology_profile if parametres and parametres.terminology_profile else 'missions' }}";
+            if (profile === 'missions') return;
+
+            const groups = {
+                mission: { singular: ['mission', 'prestation', 'intervention'], plural: ['missions', 'prestations', 'interventions'] },
+                prestataire: { singular: ['prestataire', 'dj', 'intervenant'], plural: ['prestataires', 'djs', 'intervenants'] },
+                technicien: { singular: ['technicien', 'prestataire technique'], plural: ['techniciens', 'prestataires techniques'] },
+                equipement: { singular: ['équipement', 'equipement', 'matériel', 'materiel'], plural: ['équipements', 'equipements', 'matériels', 'materiels'] },
+                site: { singular: ['site', 'local'], plural: ['sites', 'locaux'] },
+                agenda: { singular: ['agenda', 'calendrier', 'planning'], plural: ['agendas', 'calendriers', 'plannings'] }
+            };
+            const profiles = {
+                missions: {
+                    mission: ['mission', 'missions'],
+                    prestataire: ['prestataire', 'prestataires'],
+                    technicien: ['prestataire technique', 'prestataires techniques'],
+                    equipement: ['équipement', 'équipements'],
+                    site: ['site', 'sites'],
+                    agenda: ['agenda', 'agendas']
+                },
+                prestations: {
+                    mission: ['prestation', 'prestations'],
+                    prestataire: ['DJ', 'DJs'],
+                    technicien: ['technicien', 'techniciens'],
+                    equipement: ['matériel', 'matériels'],
+                    site: ['local', 'locaux'],
+                    agenda: ['calendrier', 'calendriers']
+                },
+                interventions: {
+                    mission: ['intervention', 'interventions'],
+                    prestataire: ['intervenant', 'intervenants'],
+                    technicien: ['technicien', 'techniciens'],
+                    equipement: ['matériel', 'matériels'],
+                    site: ['site', 'sites'],
+                    agenda: ['planning', 'plannings']
+                }
+            };
+
+            function buildReplacements(profileKey) {
+                const targets = profiles[profileKey] || profiles.missions;
+                const replacements = [];
+                Object.keys(targets).forEach(group => {
+                    const [singular, plural] = targets[group];
+                    const variants = groups[group] || { singular: [], plural: [] };
+                    variants.singular.forEach(source => replacements.push({ source, replacement: singular }));
+                    variants.plural.forEach(source => replacements.push({ source, replacement: plural }));
+                });
+                replacements.sort((a, b) => b.source.length - a.source.length);
+                return replacements;
+            }
+
+            function applyCase(original, replacement) {
+                if (original.toUpperCase() === original) {
+                    return replacement.toUpperCase();
+                }
+                if (original[0] && original[0].toUpperCase() === original[0]) {
+                    return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+                }
+                return replacement;
+            }
+
+            const replacements = buildReplacements(profile);
+
+            function replaceText(text) {
+                let updated = text;
+                replacements.forEach(({ source, replacement }) => {
+                    const regex = new RegExp(`\\\\b${source.replace(/[-/\\\\^$*+?.()|[\\\\]{}]/g, '\\\\$&')}\\\\b`, 'gi');
+                    updated = updated.replace(regex, match => applyCase(match, replacement));
+                });
+                return updated;
+            }
+
+            function shouldSkip(node) {
+                if (!node || !node.parentElement) return true;
+                const tag = node.parentElement.tagName;
+                return ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT'].includes(tag);
+            }
+
+            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+                acceptNode: (node) => shouldSkip(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+            });
+
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (!node || !node.nodeValue) continue;
+                const replaced = replaceText(node.nodeValue);
+                if (replaced !== node.nodeValue) {
+                    node.nodeValue = replaced;
+                }
+            }
+
+            const attrTargets = ['placeholder', 'title', 'aria-label', 'alt'];
+            attrTargets.forEach(attr => {
+                document.querySelectorAll(`[${attr}]`).forEach(el => {
+                    const val = el.getAttribute(attr);
+                    if (!val) return;
+                    const replaced = replaceText(val);
+                    if (replaced !== val) {
+                        el.setAttribute(attr, replaced);
+                    }
+                });
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const rail = document.querySelector('.top-rail');
+            if (!rail) return;
+            let lastScroll = window.scrollY || 0;
+            let ticking = false;
+
+            function update() {
+                const current = window.scrollY || 0;
+                const scrollingDown = current > lastScroll;
+                if (current > 120 && scrollingDown) {
+                    rail.classList.add('retracted');
+                } else if (current < 80 || !scrollingDown) {
+                    rail.classList.remove('retracted');
+                }
+                lastScroll = current;
+                ticking = false;
+            }
+
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    window.requestAnimationFrame(update);
+                    ticking = true;
+                }
+            }, { passive: true });
+        });
+    </script>
+</head>
+<body class="theme-{{ parametres.ui_theme if parametres and parametres.ui_theme else 'classic' }} density-{{ parametres.ui_density if parametres and parametres.ui_density else 'comfortable' }}">
+    <div class="app-container">
+        {% set endpoint = request.endpoint or '' %}
+        {% set current_section = 'dashboard' %}
+        {% if 'prestation' in endpoint or 'reservation' in endpoint or endpoint in ['calendrier', 'djs', 'ajouter_dj', 'modifier_dj', 'detail_dj'] %}
+            {% set current_section = 'operations' %}
+        {% elif 'materiel' in endpoint or endpoint in ['materiels', 'locals', 'scanner_page', 'selection_scan_materiel', 'materiel_mouvements'] %}
+            {% set current_section = 'materiel' %}
+        {% elif 'facture' in endpoint or 'devis' in endpoint or endpoint in ['facturation', 'paiements', 'creer_avoir', 'produits', 'clients', 'nouveau_client', 'modifier_client', 'client_detail'] %}
+            {% set current_section = 'finance' %}
+        {% elif endpoint.startswith('ia') %}
+            {% set current_section = 'ia' %}
+        {% elif endpoint in ['parametres', 'personnalisation', 'users', 'edit_user', 'register', 'profil', 'toggle_user'] or endpoint.startswith('user') %}
+            {% set current_section = 'parametres' %}
+        {% endif %}
+        {% if current_user %}
+        <header class="top-rail">
+            <div class="top-rail-inner">
+                <a href="{{ url_for('admin_dashboard') if current_user.role == 'admin' else url_for('manager_dashboard') if current_user.role == 'manager' else url_for('dj_dashboard') if current_user.role == 'dj' else url_for('technicien_dashboard') }}" class="brand">
+                    {% if parametres and parametres.logo_path and parametres.afficher_logo_sidebar %}
+                    <img src="{{ url_for('static', filename='uploads/' + parametres.logo_path) }}"
+                         alt="{{ parametres.nom_entreprise }}"
+                         class="brand-logo">
+                    {% else %}
+                    <span class="brand-mark">
+                        <i class="fas fa-star"></i>
+                    </span>
+                    {% endif %}
+                    <span class="brand-text">
+                        <span class="brand-title">{{ parametres.nom_entreprise if parametres else 'Planify' }}</span>
+                        <span class="brand-subtitle">{{ parametres.slogan if parametres and parametres.slogan else 'Gestion des missions' }}</span>
+                    </span>
+                </a>
+
+                <nav class="top-nav">
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="{% if current_section == 'dashboard' %}active{% endif %}"><i class="fas fa-chart-line"></i> Dashboard</a>
+                        <a href="{{ url_for('prestations') }}" class="{% if current_section == 'operations' %}active{% endif %}"><i class="fas fa-briefcase"></i> Opérations</a>
+                        <a href="{{ url_for('materiels') }}" class="{% if current_section == 'materiel' %}active{% endif %}"><i class="fas fa-box"></i> Matériel</a>
+                        <a href="{{ url_for('facturation') }}" class="{% if current_section == 'finance' %}active{% endif %}"><i class="fas fa-coins"></i> Finance</a>
+                        {% if not parametres or parametres.show_ai_menu is none or parametres.show_ai_menu %}
+                        <a href="{{ url_for('ia_hub') }}" class="{% if current_section == 'ia' %}active{% endif %}"><i class="fas fa-robot"></i> IA</a>
+                        {% endif %}
+                        <a href="{{ url_for('parametres') }}" class="{% if current_section == 'parametres' %}active{% endif %}"><i class="fas fa-sliders-h"></i> Paramètres</a>
+                    {% elif current_user.role == 'manager' %}
+                        <a href="{{ url_for('manager_dashboard') }}" class="{% if current_section == 'dashboard' %}active{% endif %}"><i class="fas fa-chart-line"></i> Dashboard</a>
+                        <a href="{{ url_for('prestations') }}" class="{% if current_section == 'operations' %}active{% endif %}"><i class="fas fa-briefcase"></i> Opérations</a>
+                        <a href="{{ url_for('materiels') }}" class="{% if current_section == 'materiel' %}active{% endif %}"><i class="fas fa-box"></i> Matériel</a>
+                        <a href="{{ url_for('facturation') }}" class="{% if current_section == 'finance' %}active{% endif %}"><i class="fas fa-coins"></i> Finance</a>
+                        {% if not parametres or parametres.show_ai_menu is none or parametres.show_ai_menu %}
+                        <a href="{{ url_for('ia_hub') }}" class="{% if current_section == 'ia' %}active{% endif %}"><i class="fas fa-robot"></i> IA</a>
+                        {% endif %}
+                        <a href="{{ url_for('profil') }}" class="{% if current_section == 'parametres' %}active{% endif %}"><i class="fas fa-user-cog"></i> Compte</a>
+                    {% elif current_user.role == 'dj' %}
+                        <a href="{{ url_for('dj_dashboard') }}" class="{% if current_section == 'dashboard' %}active{% endif %}"><i class="fas fa-chart-line"></i> Dashboard</a>
+                        <a href="{{ url_for('prestations') }}" class="{% if current_section == 'operations' %}active{% endif %}"><i class="fas fa-briefcase"></i> Opérations</a>
+                        <a href="{{ url_for('calendrier') }}" class="{% if endpoint == 'calendrier' %}active{% endif %}"><i class="fas fa-calendar"></i> Agenda</a>
+                        <a href="{{ url_for('profil') }}" class="{% if current_section == 'parametres' %}active{% endif %}"><i class="fas fa-user-cog"></i> Compte</a>
+                    {% elif current_user.role == 'technicien' %}
+                        <a href="{{ url_for('technicien_dashboard') }}" class="{% if current_section == 'dashboard' %}active{% endif %}"><i class="fas fa-chart-line"></i> Dashboard</a>
+                        <a href="{{ url_for('materiels') }}" class="{% if current_section == 'materiel' %}active{% endif %}"><i class="fas fa-box"></i> Matériel</a>
+                        <a href="{{ url_for('calendrier') }}" class="{% if endpoint == 'calendrier' %}active{% endif %}"><i class="fas fa-calendar"></i> Agenda</a>
+                        <a href="{{ url_for('profil') }}" class="{% if current_section == 'parametres' %}active{% endif %}"><i class="fas fa-user-cog"></i> Compte</a>
+                    {% endif %}
+                </nav>
+
+                <div class="top-actions">
+                    {% if current_user.role in ['admin', 'manager'] %}
+                        <a href="{{ url_for('nouvelle_prestation') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i>
+                            Nouvelle mission
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('profil') }}" class="user-pill">
+                        {% if current_user.photo_profil %}
+                            <img src="{{ url_for('static', filename=current_user.photo_profil) }}" alt="Photo" class="user-avatar">
+                        {% else %}
+                            {% set prenom_initial = (current_user.prenom or '')[:1] %}
+                            {% set nom_initial = (current_user.nom or '')[:1] %}
+                            {% set initials = (prenom_initial ~ nom_initial).strip() %}
+                            <span class="user-avatar-placeholder">
+                                {% if initials %}
+                                    {{ initials }}
+                                {% else %}
+                                    <i class="fas fa-user"></i>
+                                {% endif %}
+                            </span>
+                        {% endif %}
+                        <span class="user-pill-text">{{ current_user.prenom }} {{ current_user.nom }}</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Déconnexion
+                    </a>
+                </div>
+            </div>
+        </header>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                {% if current_user and current_section != 'dashboard' %}
+                <div class="section-nav">
+                    <div class="section-nav-inner">
+                        {% if current_section == 'operations' %}
+                            <a href="{{ url_for('prestations') }}" class="{% if 'prestation' in endpoint %}active{% endif %}">Missions</a>
+                            {% if current_user.role in ['admin', 'manager'] %}
+                            <a href="{{ url_for('reservations') }}" class="{% if 'reservation' in endpoint %}active{% endif %}">Réservations</a>
+                            {% endif %}
+                            <a href="{{ url_for('calendrier') }}" class="{% if endpoint == 'calendrier' %}active{% endif %}">Agenda</a>
+                            {% if current_user.role in ['admin', 'manager'] %}
+                            <a href="{{ url_for('djs') }}" class="{% if endpoint in ['djs', 'ajouter_dj', 'modifier_dj', 'detail_dj'] %}active{% endif %}">Prestataires</a>
+                            {% endif %}
+                        {% elif current_section == 'materiel' %}
+                            <a href="{{ url_for('materiels') }}" class="{% if 'materiel' in endpoint and endpoint != 'materiel_mouvements' %}active{% endif %}">Équipement</a>
+                            <a href="{{ url_for('materiel_mouvements') }}" class="{% if endpoint == 'materiel_mouvements' %}active{% endif %}">Mouvements</a>
+                            <a href="{{ url_for('locals') }}" class="{% if endpoint in ['locals', 'nouveau_local', 'modifier_local'] or endpoint.startswith('local') %}active{% endif %}">Locaux</a>
+                            <a href="{{ url_for('scanner_page') }}" class="{% if endpoint == 'scanner_page' %}active{% endif %}">Scanner</a>
+                        {% elif current_section == 'finance' %}
+                            <a href="{{ url_for('facturation') }}" class="{% if endpoint == 'facturation' %}active{% endif %}">Vue finance</a>
+                            <a href="{{ url_for('devis') }}" class="{% if 'devis' in endpoint %}active{% endif %}">Devis</a>
+                            <a href="{{ url_for('factures') }}" class="{% if 'facture' in endpoint and endpoint != 'facturation' %}active{% endif %}">Factures</a>
+                            <a href="{{ url_for('paiements') }}" class="{% if endpoint == 'paiements' %}active{% endif %}">Paiements</a>
+                            <a href="{{ url_for('produits') }}" class="{% if endpoint == 'produits' %}active{% endif %}">Produits</a>
+                            <a href="{{ url_for('clients') }}" class="{% if endpoint in ['clients', 'nouveau_client', 'modifier_client', 'client_detail'] %}active{% endif %}">Clients</a>
+                        {% elif current_section == 'ia' %}
+                            <a href="{{ url_for('ia_hub') }}" class="{% if endpoint == 'ia_hub' %}active{% endif %}">Hub IA</a>
+                        {% elif current_section == 'parametres' %}
+                            {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('parametres') }}" class="{% if endpoint == 'parametres' %}active{% endif %}">Entreprise</a>
+                            <a href="{{ url_for('personnalisation') }}" class="{% if endpoint == 'personnalisation' %}active{% endif %}">Personnalisation</a>
+                            <a href="{{ url_for('users') }}" class="{% if endpoint in ['users', 'edit_user', 'register'] %}active{% endif %}">Utilisateurs</a>
+                            {% endif %}
+                            <a href="{{ url_for('profil') }}" class="{% if endpoint == 'profil' %}active{% endif %}">Profil</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                <div class="header-content" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        {% block page_header %}
+                        <h1 class="page-title">
+                            {% block page_icon %}<i class="fas fa-home"></i>{% endblock %}
+                            {% block page_title %}Planify{% endblock %}
+                        </h1>
+                        {% endblock %}
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        {% if current_user %}
+                            {% if current_user.role in ['admin', 'manager'] %}
+                                <a href="{{ url_for('nouvelle_prestation') }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus"></i>
+                                    Nouvelle mission
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                                    {{ message|apply_terminology }}
+                                    <button class="close-btn" onclick="this.parentElement.remove()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% if request.user_agent and 'Mobi' in request.user_agent.string %}
+    <script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

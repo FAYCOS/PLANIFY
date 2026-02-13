@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Planify{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token or '' }}">
+    <meta name="public-api-token" content="{{ public_api_token or '' }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="public-shell{% if body_class %} {{ body_class }}{% endif %}">
+    <div class="public-shell__glow"></div>
+    <header class="public-topbar">
+        <div class="public-brand">
+            <span class="brand-mark"><i class="fa-solid fa-layer-group"></i></span>
+            <div class="brand-text">
+                <span class="brand-title">{{ parametres.nom_entreprise if parametres and parametres.nom_entreprise else 'Planify' }}</span>
+                <span class="brand-subtitle">{{ parametres.slogan if parametres and parametres.slogan else 'Gestion des prestations et logistique' }}</span>
+            </div>
+        </div>
+        <div class="public-top-actions">
+            {% block header_actions %}{% endblock %}
+        </div>
+    </header>
+    <main class="public-shell__content">
+        {% block content %}{% endblock %}
+    </main>
+    {% block footer %}{% endblock %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

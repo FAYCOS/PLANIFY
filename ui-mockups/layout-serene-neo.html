@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planify · Serene Neo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f6f1;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #0f766e;
+      --accent-2: #84cc16;
+      --shadow: 0 18px 40px rgba(31, 41, 55, 0.12);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Sora", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(15,118,110,0.1), transparent 45%),
+        radial-gradient(circle at 90% 10%, rgba(132,204,22,0.1), transparent 50%),
+        var(--bg);
+    }
+    .page { padding: 24px clamp(16px, 4vw, 44px) 44px; }
+    .header {
+      position: sticky;
+      top: 16px;
+      z-index: 10;
+      background: rgba(255,255,255,0.9);
+      border-radius: 999px;
+      padding: 12px 18px;
+      border: 1px solid rgba(255,255,255,0.9);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      backdrop-filter: blur(16px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      width: 40px; height: 40px; border-radius: 14px;
+      background: linear-gradient(135deg, #0f766e, #10b981);
+      display: grid; place-items: center; color: white; font-weight: 600;
+    }
+    .brand-title { font-family: "Source Serif 4", serif; font-size: 18px; }
+    .brand-sub { font-size: 12px; color: var(--muted); }
+
+    .nav { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .nav a { text-decoration: none; color: var(--ink); font-size: 13px; padding: 7px 12px; border-radius: 999px; font-weight: 600; }
+    .nav a.active { background: var(--ink); color: white; }
+
+    .actions { display: flex; gap: 8px; }
+    .btn { border: none; border-radius: 999px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+    .btn.primary { background: var(--accent); color: white; }
+    .btn.ghost { background: transparent; border: 1px solid var(--line); }
+
+    .subnav { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .subnav a { text-decoration: none; font-size: 12px; color: var(--muted); padding: 6px 10px; border-radius: 999px; }
+    .subnav a.active { background: rgba(15,118,110,0.12); color: var(--accent); }
+
+    .kpis { margin-top: 20px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .kpi {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .kpi span { font-size: 12px; color: var(--muted); }
+    .kpi h2 { margin: 6px 0 0; font-family: "Source Serif 4", serif; font-size: 26px; }
+
+    .content { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+    @media (max-width: 1000px) { .content { grid-template-columns: 1fr; } }
+    .panel { background: var(--panel); border-radius: var(--radius); padding: 18px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .panel h4 { margin: 0 0 10px; }
+    .row { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: #f7f8f3; border: 1px solid var(--line); margin-bottom: 10px; }
+    .chip { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: rgba(132,204,22,0.15); color: #3f6212; }
+
+    .fade { animation: fade 0.6s ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-badge">P</div>
+        <div>
+          <div class="brand-title">Planify Green</div>
+          <div class="brand-sub">Vue serene & logistique</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="active" href="#">Dashboard</a>
+        <a href="#">Opérations</a>
+        <a href="#">Matériel</a>
+        <a href="#">Finance</a>
+        <a href="#">IA</a>
+        <a href="#">Paramètres</a>
+      </nav>
+      <div class="actions">
+        <button class="btn ghost">Profil</button>
+        <button class="btn primary">Nouvelle mission</button>
+      </div>
+    </header>
+
+    <div class="subnav">
+      <a class="active" href="#">Vue globale</a>
+      <a href="#">Planning</a>
+      <a href="#">Stocks</a>
+      <a href="#">Logistique</a>
+      <a href="#">Rapports</a>
+    </div>
+
+    <section class="kpis fade">
+      <div class="kpi"><span>Missions aujourd’hui</span><h2>10</h2></div>
+      <div class="kpi"><span>Sorties validées</span><h2>36</h2></div>
+      <div class="kpi"><span>Retours en attente</span><h2>4</h2></div>
+      <div class="kpi"><span>Factures en cours</span><h2>€5,820</h2></div>
+    </section>
+
+    <section class="content fade">
+      <div class="panel">
+        <h4>Missions du jour</h4>
+        <div class="row"><div><strong>Gala Rivage</strong><br><small>19:00–01:00 · DJ Maya</small></div><span class="chip">Confirmée</span></div>
+        <div class="row"><div><strong>Salon Pro</strong><br><small>17:30–22:30 · Tech: Hugo</small></div><span class="chip">Préparation</span></div>
+        <div class="row"><div><strong>Mariage Aurore</strong><br><small>16:00–00:30 · DJ Eden</small></div><span class="chip">Logistique</span></div>
+      </div>
+      <div class="panel">
+        <h4>Insights rapides</h4>
+        <p><strong>Stock sensible:</strong> Packs Lumière A (2 unités)</p>
+        <p><strong>Distance moyenne:</strong> 22 km</p>
+        <p><strong>Retours partiels:</strong> 1</p>
+        <button class="btn ghost">Ouvrir la vue IA</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

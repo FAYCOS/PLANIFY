@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Équipement - Planify{% endblock %}
+{% block page_title %}Gestion de l'équipement{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Header avec actions principales -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 20px; font-weight: 600; color: #1d1d1f;">
+                <i class="fas fa-cogs" style="margin-right: 12px; color: #0071e3;"></i>
+                Inventaire équipement
+            </h3>
+            <div style="display: flex; gap: 12px;">
+                <a href="{{ url_for('nouveau_materiel') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Ajouter
+                </a>
+                <a href="{{ url_for('scanner_qrcode') }}" class="btn btn-secondary">
+                    <i class="fas fa-qrcode"></i>
+                    Scanner
+                </a>
+                <a href="{{ url_for('materiel_mouvements') }}" class="btn btn-secondary">
+                    <i class="fas fa-barcode"></i>
+                    Scanner sortie
+                </a>
+                <a href="{{ url_for('update_all_materiel_status') }}" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualiser
+                </a>
+                <button class="btn btn-secondary" onclick="exportMateriels()">
+                    <i class="fas fa-download"></i>
+                    Exporter
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Consultation par date/heure -->
+            <div style="background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin: 0 0 16px 0;">
+                    <i class="fas fa-calendar-alt" style="margin-right: 8px; color: #0071e3;"></i>
+                    Consultation du statut par date/heure
+                </h4>
+                <form method="GET" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 180px;">
+                        <label class="form-label" for="date_consultation">Date</label>
+                        <input type="date" id="date_consultation" name="date_consultation" 
+                               class="form-control" 
+                               value="{{ request.args.get('date_consultation', '') }}">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+                        <label class="form-label" for="heure_debut_consultation">Heure début</label>
+                        <input type="time" id="heure_debut_consultation" name="heure_debut_consultation" 
+                               class="form-control" 
+                               value="{{ request.args.get('heure_debut_consultation', '20:00') }}">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+                        <label class="form-label" for="heure_fin_consultation">Heure fin</label>
+                        <input type="time" id="heure_fin_consultation" name="heure_fin_consultation" 
+                               class="form-control" 
+                               value="{{ request.args.get('heure_fin_consultation', '02:00') }}">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        Consulter
+                    </button>
+                    
+                    <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                        <i class="fas fa-clock"></i>
+                        Actuel
+                    </a>
+                </form>
+            </div>
+
+            <!-- Filtres -->
+            <div style="background: #f5f5f7; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin: 0 0 16px 0;">
+                    <i class="fas fa-filter" style="margin-right: 8px; color: #0071e3;"></i>
+                    Filtres
+                </h4>
+                <form method="GET" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                        <label class="form-label" for="local_id">Site</label>
+                        <select id="local_id" name="local_id" class="form-control form-select">
+                            <option value="">Tous les sites</option>
+                            {% for local in locals %}
+                            <option value="{{ local.id }}" {% if selected_local == local.id %}selected{% endif %}>
+                                {{ local.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                        <label class="form-label" for="statut">Statut</label>
+                        <select id="statut" name="statut" class="form-control form-select">
+                            <option value="">Tous les statuts</option>
+                            <option value="disponible" {% if selected_statut == 'disponible' %}selected{% endif %}>Disponible</option>
+                            <option value="maintenance" {% if selected_statut == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                            <option value="hors_service" {% if selected_statut == 'hors_service' %}selected{% endif %}>Hors service</option>
+                            <option value="archive" {% if selected_statut == 'archive' %}selected{% endif %}>Archivé</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Filtrer
+                    </button>
+                    
+                    <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Effacer
+                    </a>
+                </form>
+            </div>
+
+            <!-- Indicateur de consultation -->
+            {% if request.args.get('date_consultation') %}
+            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-info-circle" style="color: #0071e3; font-size: 20px;"></i>
+                    <div>
+                        <strong style="color: #1d1d1f;">Consultation du statut :</strong> 
+                        <span style="color: #515154;">{{ request.args.get('date_consultation') }} de {{ request.args.get('heure_debut_consultation') }} à {{ request.args.get('heure_fin_consultation') }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('materiels') }}" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-clock"></i> Statut actuel
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Compteur de résultats -->
+            <div style="text-align: right; margin-bottom: 16px;">
+                <span style="font-size: 14px; color: #86868b; font-weight: 500;">
+                    {{ materiels|length }} équipement{{ 's' if materiels|length > 1 else '' }} trouvé{{ 's' if materiels|length > 1 else '' }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste du matériel en cards -->
+    {% if materiels %}
+    <div style="display: grid; gap: 16px;">
+        {% for materiel in materiels %}
+        <div style="background: white; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 16px; padding: 24px; display: flex; align-items: center; gap: 24px; transition: all 0.2s ease;">
+            
+            <!-- Icône matériel -->
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-cogs" style="font-size: 24px; color: #0071e3;"></i>
+            </div>
+            
+            <!-- Infos matériel -->
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 17px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                    {{ materiel.nom }}
+                </div>
+                <div style="font-size: 13px; color: #86868b; margin-bottom: 8px;">
+                    ID: {{ materiel.id }}
+                    {% if materiel.numero_serie %}
+                    <span style="margin-left: 8px;">• SN: {{ materiel.numero_serie }}</span>
+                    {% endif %}
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                    <span style="display: inline-block; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #0071e3; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                        {{ materiel.categorie or 'Non défini' }}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-building" style="color: #86868b; font-size: 12px;"></i>
+                        <span style="font-size: 13px; color: #515154;">{{ materiel.local.nom }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-boxes" style="color: #86868b; font-size: 12px;"></i>
+                        <span style="font-size: 13px; font-weight: 600; color: #1d1d1f;">Qté: {{ materiel.quantite }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statut -->
+            <div style="flex-shrink: 0;">
+                {% if materiel.statut_consultation == 'disponible' %}
+                <span class="status-badge status-disponible">
+                    <i class="fas fa-check-circle"></i>
+                    Disponible
+                </span>
+                {% elif materiel.statut_consultation == 'occupe' %}
+                <span class="status-badge status-occupe">
+                    <i class="fas fa-clock"></i>
+                    En mission
+                </span>
+                {% elif materiel.statut_consultation == 'partiel' %}
+                <span class="status-badge status-partiel">
+                    <i class="fas fa-adjust"></i>
+                    Partiel
+                </span>
+                {% elif materiel.statut_consultation == 'maintenance' %}
+                <span class="status-badge status-maintenance">
+                    <i class="fas fa-wrench"></i>
+                    Maintenance
+                </span>
+                {% elif materiel.statut_consultation == 'hors_service' %}
+                <span class="status-badge status-hors_service">
+                    <i class="fas fa-ban"></i>
+                    Hors service
+                </span>
+                {% elif materiel.statut_consultation == 'archive' %}
+                <span class="status-badge status-inactive">
+                    <i class="fas fa-archive"></i>
+                    Archivé
+                </span>
+                {% else %}
+                <span class="status-badge status-inactive">
+                    <i class="fas fa-question-circle"></i>
+                    {{ (materiel.statut_consultation or materiel.statut) | replace('_', ' ') }}
+                </span>
+                {% endif %}
+                {% if request.args.get('date_consultation') %}
+                <div style="font-size: 11px; color: #86868b; margin-top: 6px; text-align: center;">
+                    <i class="fas fa-calendar"></i> 
+                    {{ request.args.get('date_consultation') }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Actions -->
+            <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                <a href="{{ url_for('fiche_materiel', materiel_id=materiel.id) }}"
+                   style="padding: 10px 16px; border-radius: 10px; background: #f5f5f7; color: #1d1d1f; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                   title="Fiche équipement"
+                   onmouseover="this.style.background='#e8e8ed'"
+                   onmouseout="this.style.background='#f5f5f7'">
+                    <i class="fas fa-clipboard-list"></i>
+                </a>
+                <a href="{{ url_for('selection_scan_materiel', materiel_id=materiel.id) }}"
+                   style="padding: 10px 16px; border-radius: 10px; background: #f5f5f7; color: #1d1d1f; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                   title="Scanner / actions"
+                   onmouseover="this.style.background='#e8e8ed'"
+                   onmouseout="this.style.background='#f5f5f7'">
+                    <i class="fas fa-qrcode"></i>
+                </a>
+                <a href="{{ url_for('materiel_calendrier', materiel_id=materiel.id) }}" 
+                   style="padding: 10px 16px; border-radius: 10px; background: #f5f5f7; color: #1d1d1f; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                   title="Voir le calendrier"
+                   onmouseover="this.style.background='#e8e8ed'"
+                   onmouseout="this.style.background='#f5f5f7'">
+                    <i class="fas fa-calendar-alt"></i>
+                </a>
+                <a href="{{ url_for('modifier_materiel', materiel_id=materiel.id) }}" 
+                   style="padding: 10px 20px; border-radius: 10px; background: #0071E3; color: white; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; border: none; cursor: pointer;"
+                   onmouseover="this.style.background='#0077ED'"
+                   onmouseout="this.style.background='#0071E3'">
+                    <i class="fas fa-edit"></i>
+                    Modifier
+                </a>
+                <form method="POST" action="{{ url_for('changer_statut_materiel', materiel_id=materiel.id) }}" 
+                      style="display: inline; margin: 0;">
+                    <input type="hidden" name="statut" value="maintenance">
+                    <button type="submit" 
+                            style="padding: 10px 16px; border-radius: 10px; background: #FF9500; color: white; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;"
+                            onclick="return confirm('Mettre ce matériel en maintenance ?')"
+                            title="Maintenance">
+                        <i class="fas fa-wrench"></i>
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('supprimer_materiel', materiel_id=materiel.id) }}" 
+                      style="display: inline; margin: 0;" 
+                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce matériel ?')">
+                    <button type="submit" 
+                            style="padding: 10px 16px; border-radius: 10px; background: #FF3B30; color: white; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;"
+                            title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+            
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 80px 40px;">
+        <div style="display: inline-block; width: 120px; height: 120px; background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+            <i class="fas fa-cogs" style="font-size: 48px; color: #86868b;"></i>
+        </div>
+        <h3 style="font-size: 22px; font-weight: 600; color: #1d1d1f; margin: 0 0 12px 0;">Aucun équipement trouvé</h3>
+        <p style="font-size: 15px; color: #86868b; margin: 0 0 32px 0;">Commencez par ajouter de l'équipement à votre inventaire</p>
+        <a href="{{ url_for('nouveau_materiel') }}" class="btn btn-primary" style="padding: 12px 32px;">
+            <i class="fas fa-plus"></i>
+            Ajouter de l'équipement
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportMateriels() {
+    window.location.href = "{{ url_for('export_materiels') }}";
+}
+</script>
+{% endblock %}

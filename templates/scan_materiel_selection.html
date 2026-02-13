@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Équipement - {{ materiel.nom }}{% endblock %}
+{% block page_title %}Scan équipement{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="max-w-2xl mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-qrcode"></i>
+                    {{ materiel.nom }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <div class="text-sm text-gray-600">Numéro de série</div>
+                        <div class="font-medium">{{ materiel.numero_serie or 'Non renseigné' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Site</div>
+                        <div class="font-medium">{{ materiel.local.nom }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Statut</div>
+                        <span class="status-badge status-{{ materiel.statut }}">
+                            {{ materiel.statut|replace('_', ' ')|title }}
+                        </span>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">Dernière maintenance</div>
+                        <div class="font-medium">
+                            {% if materiel.derniere_maintenance %}
+                                {{ materiel.derniere_maintenance.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                Non renseignée
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if materiel.notes_technicien %}
+                <div class="mb-6">
+                    <div class="text-sm text-gray-600">Notes techniques</div>
+                    <div class="p-3 rounded-lg" style="background: #f5f5f7; color: #1d1d1f;">
+                        {{ materiel.notes_technicien }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="flex flex-col md:flex-row gap-3">
+                    <a href="{{ url_for('fiche_materiel', materiel_id=materiel.id) }}" class="btn btn-primary">
+                        <i class="fas fa-clipboard-list"></i>
+                        Fiche équipement
+                    </a>
+                    <a href="{{ url_for('scan_materiel', materiel_id=materiel.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-exchange-alt"></i>
+                        Sortie / Retour
+                    </a>
+                    <a href="{{ url_for('materiels') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

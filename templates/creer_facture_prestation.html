@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Créer une Facture depuis une Mission{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('facturation') }}">Facturation</a></li>
+                        <li class="breadcrumb-item active">Créer depuis Mission</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Créer une Facture depuis une Mission
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card finance-section">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Missions avec Devis Disponibles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if prestations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover scan-aligned-table scan-cols-8">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Mission</th>
+                                        <th>Client</th>
+                                        <th>Date</th>
+                                        <th>Prestataire</th>
+                                        <th>Devis</th>
+                                        <th>Montant</th>
+                                        <th>Source</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prestation in prestations %}
+                                        {% set devis = prestation.devis[0] if prestation.devis else None %}
+                                        {% if devis %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                        <i class="fas fa-music text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0">{{ prestation.client }}</h6>
+                                                        <small class="text-muted">{{ prestation.lieu }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ prestation.client }}</strong>
+                                                    {% if prestation.client_email %}
+                                                        <br><small class="text-muted">{{ prestation.client_email }}</small>
+                                                    {% elif devis.client_email %}
+                                                        <br><small class="text-muted">{{ devis.client_email }} <span class="text-warning">(devis)</span></small>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ prestation.date_debut.strftime('%d/%m/%Y') }}</strong>
+                                                    <br><small class="text-muted">
+                                                        {{ prestation.heure_debut.strftime('%H:%M') }} - {{ prestation.heure_fin.strftime('%H:%M') }}
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if prestation.dj %}
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar-xs bg-info rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                            <i class="fas fa-user text-white"></i>
+                                                        </div>
+                                                        <span>{{ prestation.dj.nom }}</span>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">Non assigné</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ devis.numero }}</strong>
+                                                    <br><small class="text-muted">{{ devis.date_creation.strftime('%d/%m/%Y') }}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="text-end">
+                                                    <strong class="text-success">{{ "%.2f"|format(devis.montant_ttc) }}€</strong>
+                                                    <br><small class="text-muted">TTC</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="text-center">
+                                                    {% if prestation.client_email or prestation.client_telephone %}
+                                                        <span class="badge bg-success">Mission</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">Devis</span>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('creer_facture_depuis_prestation_id', prestation_id=prestation.id) }}" 
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-plus me-1"></i>
+                                                        Créer Facture
+                                                    </a>
+                                                    <a href="{{ url_for('devis_pdf', devis_id=devis.id) }}" 
+                                                       class="btn btn-outline-secondary btn-sm" target="_blank">
+                                                        <i class="fas fa-file-pdf me-1"></i>
+                                                        Voir Devis
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="fas fa-inbox fa-3x text-muted"></i>
+                            </div>
+                            <h5 class="text-muted">Aucune mission avec devis disponible</h5>
+                            <p class="text-muted">Les missions doivent avoir un devis associé pour pouvoir créer une facture.</p>
+                            <a href="{{ url_for('prestations') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>
+                                Créer une Mission
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

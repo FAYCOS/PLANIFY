@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Scanner Équipement - {{materiel.nom}}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3><i class="fas fa-qrcode"></i> {{materiel.nom}}</h3>
+            <p class="mb-0">ID: {{materiel.id}}{% if materiel.numero_serie %} | SN: {{ materiel.numero_serie }}{% endif %} | {{materiel.categorie}} | Site: {{materiel.local.nom}}</p>
+            </div>
+        <div class="card-body">
+            <!-- Choix de l'action -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <button class="btn btn-success btn-lg w-100" onclick="selectAction('sortie')">
+                        <i class="fas fa-arrow-right"></i><br>DÉPART PRESTATION
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-info btn-lg w-100" onclick="selectAction('retour')">
+                        <i class="fas fa-arrow-left"></i><br>RETOUR LOCAL
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulaire sortie -->
+            <div id="form-sortie" style="display:none;">
+                <h5>🚀 Départ en mission</h5>
+                <div class="mb-3">
+                    <label>Mission assignée</label>
+                    <select id="prestation_sortie" class="form-select" required>
+                        <option value="">-- Sélectionner --</option>
+                        {% for presta in prestations_sortie %}
+                        <option value="{{presta.id}}">
+                            {{presta.client}} - {{presta.date_debut.strftime('%d/%m/%Y')}} ({{ presta.statut }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not prestations_sortie %}
+                    <div class="form-text text-muted">Aucune mission valide pour une sortie (fenêtre logistique).</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label>Quantité</label>
+                    <input type="number" id="quantite_sortie" class="form-control" value="1" min="1" max="{{materiel.quantite}}">
+                </div>
+                <button class="btn btn-success" onclick="validerSortie()">✅ Valider sortie</button>
+                <button class="btn btn-secondary" onclick="cancelAction()">Annuler</button>
+            </div>
+
+            <!-- Formulaire retour -->
+            <div id="form-retour" style="display:none;">
+                <h5>🏠 Retour au site</h5>
+                <div class="mb-3">
+                    <label>Mission assignée</label>
+                    <select id="prestation_retour" class="form-select" required>
+                        <option value="">-- Sélectionner --</option>
+                        {% for presta in prestations_retour %}
+                        <option value="{{presta.id}}">
+                            {{presta.client}} - {{presta.date_debut.strftime('%d/%m/%Y')}} ({{ presta.statut }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not prestations_retour %}
+                    <div class="form-text text-muted">Aucune mission terminée pour retour.</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label>Site de retour</label>
+                    <select id="local_retour" class="form-select" required>
+                        {% for local in locals %}
+                        <option value="{{local.id}}">{{local.nom}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label>Quantité</label>
+                    <input type="number" id="quantite_retour" class="form-control" value="1" min="1">
+                </div>
+                <button class="btn btn-info" onclick="validerRetour()">✅ Valider retour</button>
+                <button class="btn btn-secondary" onclick="cancelAction()">Annuler</button>
+            </div>
+
+            <!-- Messages -->
+            {% if not prestations_sortie and not prestations_retour %}
+            <div class="alert alert-warning">
+                Aucune mission assignée à cet équipement pour le moment.
+            </div>
+            {% endif %}
+
+            <div id="message-zone" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectAction(action) {
+    document.getElementById('form-sortie').style.display = action === 'sortie' ? 'block' : 'none';
+    document.getElementById('form-retour').style.display = action === 'retour' ? 'block' : 'none';
+}
+
+function cancelAction() {
+    document.getElementById('form-sortie').style.display = 'none';
+    document.getElementById('form-retour').style.display = 'none';
+}
+
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+async function validerSortie() {
+    const prestation_id = document.getElementById('prestation_sortie').value;
+    const quantite = document.getElementById('quantite_sortie').value;
+    
+    if (!prestation_id) {
+        alert('Sélectionnez une mission');
+        return;
+    }
+    
+    try {
+        const headers = {'Content-Type': 'application/json'};
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+        const response = await fetch('/api/materiel/sortie', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                materiel_id: {{materiel.id}},
+                prestation_id: parseInt(prestation_id),
+                quantite: parseInt(quantite)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('message-zone').innerHTML = `
+                <div class="alert alert-success">
+                    <h5>${data.message}</h5>
+                    <a href="/materiels" class="btn btn-primary">Retour à la liste</a>
+                </div>
+            `;
+            cancelAction();
+        } else {
+            document.getElementById('message-zone').innerHTML = `
+                <div class="alert alert-danger">${data.error}</div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('message-zone').innerHTML = `
+            <div class="alert alert-danger">Erreur: ${error.message}</div>
+        `;
+    }
+}
+
+async function validerRetour() {
+    const prestation_id = document.getElementById('prestation_retour').value;
+    const local_retour_id = document.getElementById('local_retour').value;
+    const quantite = document.getElementById('quantite_retour').value;
+    
+    if (!prestation_id || !local_retour_id) {
+        alert('Remplissez tous les champs');
+        return;
+    }
+    
+    try {
+        const headers = {'Content-Type': 'application/json'};
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+        const response = await fetch('/api/materiel/retour', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                materiel_id: {{materiel.id}},
+                prestation_id: parseInt(prestation_id),
+                local_retour_id: parseInt(local_retour_id),
+                quantite: parseInt(quantite)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('message-zone').innerHTML = `
+                <div class="alert alert-success">
+                    <h5>${data.message}</h5>
+                    <a href="/materiels" class="btn btn-primary">Retour à la liste</a>
+                </div>
+            `;
+            cancelAction();
+        } else {
+            document.getElementById('message-zone').innerHTML = `
+                <div class="alert alert-danger">${data.error}</div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('message-zone').innerHTML = `
+            <div class="alert alert-danger">Erreur: ${error.message}</div>
+        `;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Devis {{ devis.numero }} - Planify{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css') }}">
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    .quill-editor {
+        min-height: 260px;
+        background: #fff;
+    }
+    .quill-editor .ql-editor {
+        min-height: 240px;
+        font-size: 15px;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid finance-shell">
+    <div class="finance-detail-header">
+        <div>
+            <p class="finance-eyebrow">Devis</p>
+            <h1 class="finance-detail-title">{{ devis.numero }}</h1>
+            <p class="finance-subtitle">{{ devis.client_nom }} · {{ devis.date_creation.strftime('%d/%m/%Y') }}</p>
+        </div>
+        <div class="finance-detail-actions">
+            <a href="{{ url_for('devis_choix_tva', devis_id=devis.id) }}" class="btn btn-primary">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+            {% if current_user.can_edit_prestations() and devis.client_email %}
+            <form method="POST" action="{{ url_for('envoyer_devis_apres_edition', devis_id=devis.id) }}"
+                  onsubmit="return confirm('Envoyer ce devis au client ?') && syncDevisContentForSend();" style="display:inline;">
+                {% if not devis.est_signe %}
+                <input type="hidden" name="contenu_html" id="contenu_html_send">
+                {% endif %}
+                {% if parametres and parametres.tva_non_applicable %}
+                    <input type="hidden" name="include_tva" value="0">
+                    <span class="finance-meta me-2">TVA non applicable</span>
+                {% else %}
+                    {% set tva_default = devis.tva_incluse if devis.tva_incluse is not none else True %}
+                    {% if devis.est_signe %}
+                        <input type="hidden" name="include_tva" value="{{ '1' if tva_default else '0' }}">
+                        <span class="finance-meta me-2">TVA figée</span>
+                    {% else %}
+                        <select name="include_tva" class="form-select form-select-sm me-2" style="width: auto; display: inline-block;">
+                            <option value="1" {% if tva_default %}selected{% endif %}>TVA incluse</option>
+                            <option value="0" {% if not tva_default %}selected{% endif %}>Sans TVA</option>
+                        </select>
+                    {% endif %}
+                {% endif %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-paper-plane"></i> {{ 'Renvoyer' if devis.est_signe else 'Envoyer' }}
+                </button>
+            </form>
+            {% endif %}
+            {% if current_user.can_edit_prestations() and not devis.est_signe %}
+            <a href="{{ url_for('modifier_devis', devis_id=devis.id) }}" class="btn btn-outline-warning">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            {% endif %}
+            <a href="{{ url_for('facturation') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    {% if devis.est_signe %}
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0"><i class="fas fa-check-circle"></i> Devis signé</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Signé par :</strong> {{ devis.client_nom }}</p>
+                    <p><strong>Date :</strong> {{ devis.signature_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    <p><strong>Adresse IP :</strong> {{ devis.signature_ip }}</p>
+                </div>
+                <div class="col-md-6">
+                    {% set signature_src = devis.signature_image if devis.signature_image.startswith('data:') else 'data:image/png;base64,' ~ devis.signature_image %}
+                    <img src="{{ signature_src }}" alt="Signature" style="max-width: 100%; height: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif devis.signature_token %}
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0"><i class="fas fa-pen-nib"></i> Signature en attente</h5></div>
+        <div class="card-body">
+            <p>Ce devis a été envoyé pour signature électronique.</p>
+            <div class="input-group">
+                <input type="text" class="form-control" readonly value="{{ url_for('page_signature_devis', token=devis.signature_token, _external=True) }}">
+                <button class="btn btn-outline-primary" onclick="copySignatureLink()"><i class="fas fa-copy"></i></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="finance-split">
+        <div class="finance-shell">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-user"></i> Informations client</h5></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{{ devis.client_nom }}</strong></p>
+                            {% if devis.client_email %}<p><i class="fas fa-envelope"></i> {{ devis.client_email }}</p>{% endif %}
+                            {% if devis.client_telephone %}<p><i class="fas fa-phone"></i> {{ devis.client_telephone }}</p>{% endif %}
+                            {% if devis.client_adresse %}<p><i class="fas fa-map-marker-alt"></i> {{ devis.client_adresse }}</p>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if devis.client_siren %}<p><strong>SIREN :</strong> {{ devis.client_siren }}</p>{% endif %}
+                            {% if devis.client_tva %}<p><strong>TVA :</strong> {{ devis.client_tva }}</p>{% endif %}
+                            {% if devis.numero_bon_commande %}<p><strong>Bon de commande :</strong> {{ devis.numero_bon_commande }}</p>{% endif %}
+                            {% if devis.adresse_livraison %}<p><strong>Livraison :</strong> {{ devis.adresse_livraison }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-calendar"></i> Mission</h5></div>
+                <div class="card-body">
+                    <p><strong>{{ devis.prestation_titre }}</strong></p>
+                    <p><i class="fas fa-map-marker-alt"></i> {{ devis.lieu }}</p>
+                    <p><i class="fas fa-calendar"></i> {{ devis.date_prestation.strftime('%d/%m/%Y') }}</p>
+                    <p><i class="fas fa-clock"></i> {{ devis.heure_debut.strftime('%H:%M') }} - {{ devis.heure_fin.strftime('%H:%M') }}</p>
+                    {% if devis.dj %}<p><i class="fas fa-user"></i> {{ devis.dj.nom }}</p>{% endif %}
+                    {% if devis.prestation_description %}<p class="mt-3">{{ devis.prestation_description }}</p>{% endif %}
+                </div>
+            </div>
+
+            {% set materiel_ns = namespace(assignations=[]) %}
+            {% if devis.prestation %}
+                {% set materiel_ns.assignations = devis.prestation.materiel_assignations %}
+            {% elif devis.reservation_origine %}
+                {% set materiel_ns.assignations = devis.reservation_origine.materiel_assignations %}
+            {% endif %}
+            {% if materiel_ns.assignations %}
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-cogs"></i> Équipement inclus</h5></div>
+                <div class="card-body">
+                    {% set total_ns = namespace(total=0) %}
+                    <div class="table-responsive">
+                        <table class="table finance-table scan-aligned-table scan-cols-4" data-no-contextbox="true">
+                            <thead>
+                                <tr>
+                                    <th>Matériel</th>
+                                    <th class="text-end">Quantité</th>
+                                    <th class="text-end">Prix unitaire</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignation in materiel_ns.assignations %}
+                                {% set materiel = assignation.materiel %}
+                                {% set prix_unitaire = (materiel.prix_location if materiel and materiel.prix_location is not none else 0) %}
+                                {% set ligne_total = prix_unitaire * assignation.quantite %}
+                                {% set total_ns.total = total_ns.total + ligne_total %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ materiel.nom if materiel else 'Matériel supprimé' }}</div>
+                                        <div class="finance-meta">{{ materiel.categorie if materiel and materiel.categorie else 'Non défini' }}{% if materiel and materiel.local %} - {{ materiel.local.nom }}{% endif %}</div>
+                                    </td>
+                                    <td class="text-end">{{ assignation.quantite }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(prix_unitaire) }} €</td>
+                                    <td class="text-end">{{ "%.2f"|format(ligne_total) }} €</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-semibold">
+                                    <td colspan="3">Total équipement</td>
+                                    <td class="text-end">{{ "%.2f"|format(total_ns.total) }} €</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-list"></i> Lignes du devis</h5></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table finance-table scan-aligned-table scan-cols-4" data-no-contextbox="true">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Quantité</th>
+                                    <th class="text-end">Prix unitaire</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mission / Prestation</td>
+                                    <td class="text-end">{{ devis.duree_heures }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.tarif_horaire) }} €</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.tarif_horaire * devis.duree_heures) }} €</td>
+                                </tr>
+                                {% if devis.frais_transport > 0 %}
+                                <tr>
+                                    <td>Frais de transport</td>
+                                    <td class="text-end">1</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_transport) }} €</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_transport) }} €</td>
+                                </tr>
+                                {% endif %}
+                                {% if devis.frais_materiel > 0 %}
+                                <tr>
+                                    <td>Frais matériel</td>
+                                    <td class="text-end">1</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_materiel) }} €</td>
+                                    <td class="text-end">{{ "%.2f"|format(devis.frais_materiel) }} €</td>
+                                </tr>
+                                {% endif %}
+                                {% if devis.remise_pourcentage > 0 or devis.remise_montant > 0 %}
+                                <tr>
+                                    <td>Remise</td>
+                                    <td class="text-end">-</td>
+                                    <td class="text-end">-</td>
+                                    <td class="text-end text-danger">
+                                        {% if devis.remise_pourcentage > 0 %}-{{ "%.2f"|format(devis.remise_pourcentage) }}%{% else %}-{{ "%.2f"|format(devis.remise_montant) }}€{% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-file-alt"></i> Contenu du devis</h5></div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mettre_a_jour_contenu_devis', devis_id=devis.id) }}" onsubmit="return syncDevisContent();">
+                        <input type="hidden" name="contenu_html" id="contenu_html">
+                        <div id="devis-editor" class="quill-editor"></div>
+                        {% if not devis.est_signe %}
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-save"></i> Enregistrer le contenu
+                            </button>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-info"></i> Statut</h5></div>
+                <div class="card-body text-center">
+                    <span class="finance-badge {{ 'finance-badge-success' if devis.statut == 'accepte' else 'finance-badge-warning' if devis.statut == 'envoye' else 'finance-badge-danger' if devis.statut in ['refuse', 'annule'] else 'finance-badge-neutral' }}">
+                        {{ devis.statut|replace('_', ' ')|title }}
+                    </span>
+                    <hr>
+                    {% set tva_applicable = not (parametres and parametres.tva_non_applicable) %}
+                    {% set tva_incluse = devis.tva_incluse if devis.tva_incluse is not none else True %}
+                    {% set devis_total = devis.montant_ttc if tva_applicable and tva_incluse else devis.montant_ht %}
+                    <h6>Montant total</h6>
+                    <h4 class="text-success">{{ "%.2f"|format(devis_total) }} €</h4>
+                    {% if devis.date_validite %}
+                    <hr>
+                    <h6>Valide jusqu'au</h6>
+                    <p class="mb-0">{{ devis.date_validite.strftime('%d/%m/%Y') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+const devisEditor = new Quill('#devis-editor', { theme: 'snow' });
+devisEditor.root.innerHTML = {{ devis_content|tojson }};
+{% if devis.est_signe %}
+devisEditor.enable(false);
+{% endif %}
+
+function syncDevisContent() {
+    const field = document.getElementById('contenu_html');
+    if (field) {
+        field.value = devisEditor.root.innerHTML;
+    }
+    return true;
+}
+
+function syncDevisContentForSend() {
+    const field = document.getElementById('contenu_html_send');
+    if (field) {
+        field.value = devisEditor.root.innerHTML;
+    }
+    return true;
+}
+
+function copySignatureLink() {
+    const input = document.querySelector('.input-group input');
+    if (!input) return;
+    input.select();
+    document.execCommand('copy');
+}
+</script>
+{% endblock %}
