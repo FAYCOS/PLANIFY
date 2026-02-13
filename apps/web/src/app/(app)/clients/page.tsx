@@ -27,7 +27,7 @@ type PageProps = {
 export default async function ClientsPage({ searchParams }: PageProps) {
   const q = typeof searchParams?.q === "string" ? searchParams.q : "";
   const session = await getServerSession();
-  const orgId = session?.user?.orgId;
+  const orgId = (session?.user as { orgId?: string } | undefined)?.orgId;
   if (!orgId) {
     redirect("/signup");
   }

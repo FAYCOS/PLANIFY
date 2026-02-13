@@ -37,7 +37,7 @@ export default async function FacturesPage({
   const q = searchParams?.q?.toLowerCase() ?? "";
   const statut = searchParams?.statut ?? "";
   const session = await getServerSession();
-  const orgId = session?.user?.orgId;
+  const orgId = (session?.user as { orgId?: string } | undefined)?.orgId;
   if (!orgId) {
     redirect("/signup");
   }

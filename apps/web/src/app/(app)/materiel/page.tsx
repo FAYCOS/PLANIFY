@@ -36,7 +36,7 @@ function formatEuro(value: string | null) {
 
 export default async function MaterielPage() {
   const session = await getServerSession();
-  const orgId = session?.user?.orgId;
+  const orgId = (session?.user as { orgId?: string } | undefined)?.orgId;
   if (!orgId) {
     redirect("/signup");
   }

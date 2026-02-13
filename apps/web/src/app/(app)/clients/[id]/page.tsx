@@ -15,7 +15,7 @@ type Params = { params: Promise<{ id: string }> };
 export default async function ClientDetailPage({ params }: Params) {
   const { id } = await params;
   const session = await getServerSession();
-  const orgId = session?.user?.orgId;
+  const orgId = (session?.user as { orgId?: string } | undefined)?.orgId;
   if (!orgId) {
     redirect("/signup");
   }

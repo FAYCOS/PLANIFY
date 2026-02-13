@@ -16,7 +16,7 @@ export default async function UtilisateursPage() {
   if (session.user.role !== "admin") {
     redirect("/dashboard");
   }
-  const orgId = session.user.orgId;
+  const orgId = (session?.user as { orgId?: string } | undefined)?.orgId;
   if (!orgId) {
     redirect("/signup");
   }
